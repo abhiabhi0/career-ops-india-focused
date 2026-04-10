@@ -48,12 +48,12 @@ Classify every offer into one of these types (or hybrid of 2):
 
 | Archetype | Key signals in JD |
 |-----------|-------------------|
-| AI Platform / LLMOps | "observability", "evals", "pipelines", "monitoring", "reliability" |
-| Agentic / Automation | "agent", "HITL", "orchestration", "workflow", "multi-agent" |
-| Technical AI PM | "PRD", "roadmap", "discovery", "stakeholder", "product manager" |
-| AI Solutions Architect | "architecture", "enterprise", "integration", "design", "systems" |
-| AI Forward Deployed | "client-facing", "deploy", "prototype", "fast delivery", "field" |
-| AI Transformation | "change management", "adoption", "enablement", "transformation" |
+| Backend / Systems Engineer | "backend", "API", "microservices", "distributed", "REST", "gRPC", "database" |
+| Platform / Infrastructure | "platform", "Kubernetes", "CI/CD", "infrastructure", "developer tooling", "cloud" |
+| DevOps / SRE | "SRE", "reliability", "observability", "monitoring", "incident", "on-call", "uptime" |
+| Full-Stack Go Engineer | "full-stack", "frontend", "React", "end-to-end", "Go" + UI framework |
+| Data / Streaming Engineer | "Kafka", "data pipeline", "ETL", "streaming", "real-time", "data infrastructure" |
+| Cloud / Networking | "networking", "edge", "CDN", "DNS", "proxy", "load balancer", "eBPF" |
 
 After detecting archetype, read `modes/_profile.md` for the user's specific framing and proof points for that archetype.
 

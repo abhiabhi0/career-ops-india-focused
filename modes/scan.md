@@ -162,6 +162,52 @@ Nuevas añadidas a pipeline.md: N
 → Ejecuta /career-ops pipeline para evaluar las nuevas ofertas.
 ```
 
+## Post-scan obligatorio (preparar aplicación aunque falle el submit)
+
+En este fork, `scan` NO termina al descubrir URLs. Después de añadir nuevas ofertas al pipeline, continuar automáticamente con preparación de artefactos de aplicación por cada oferta nueva.
+
+### Objetivo
+
+Aunque la aplicación automática falle (formulario complejo, login, captcha, etc.), siempre dejar listo:
+- `resume.md` adaptado al rol
+- `answers.md` con respuestas para formulario
+- carpeta por rol en `applications/{batch-name}/`
+- registro en `applications/{batch-name}/README.md`
+
+### Workflow post-scan
+
+1. Tomar solo las ofertas nuevas añadidas en esta ejecución (`status: added`).
+2. Crear/reusar batch del día:
+   - `applications/golang-jobs-{YYYY-MM-DD}/`
+3. Para cada oferta nueva:
+   a. Extraer JD (Playwright → WebFetch → WebSearch fallback).
+   b. Generar carpeta slug:
+      - `applications/golang-jobs-{YYYY-MM-DD}/{company-role-slug}/`
+   c. Generar `resume.md` adaptado a la oferta.
+   d. Generar `answers.md` con:
+      - Why this role/company
+      - Relevant achievement
+      - Fit summary
+      - Form fields comunes (location, authorization, compensation)
+   e. Intentar assist de apply (sin submit final).
+   f. Si falla apply, mantener artefactos y marcar estado de bloqueo.
+4. Actualizar `applications/golang-jobs-{YYYY-MM-DD}/README.md` agregando fila por rol con:
+   - Company, Role, Location, URL, Applied?, Artifacts
+5. Mantener consistencia:
+   - si ya existe carpeta de ese rol, actualizar archivos en vez de duplicar
+   - si ya existe fila en README para company+role, actualizar estado
+
+### Estados recomendados en README de applications
+
+- `Not submitted (ready)` → artefactos listos, pendiente submit manual
+- `Not submitted (needs form run)` → requiere interacción adicional en formulario
+- `Blocked (JD fetch too thin)` → no hubo suficiente JD para adaptación fina
+- `Blocked (apply flow failed)` → falló flujo de aplicación, artefactos sí existen
+
+### Regla de oro
+
+`scan` debe dejar valor utilizable inmediato para aplicar manualmente, incluso sin completar submit automático.
+
 ## Gestión de careers_url
 
 Cada empresa en `tracked_companies` debe tener `careers_url` — la URL directa a su página de ofertas. Esto evita buscarlo cada vez.
