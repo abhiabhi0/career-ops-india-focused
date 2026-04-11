@@ -9,13 +9,15 @@
  * Usage:
  *   node update-system.mjs check      # Check if update available
  *   node update-system.mjs apply      # Apply update (after user confirms)
+ *   CAREER_OPS_ALLOW_DEP_INSTALL=1 node update-system.mjs apply
+ *                                   # Optional dependency install via npm ci --ignore-scripts
  *   node update-system.mjs rollback   # Rollback last update
  *   node update-system.mjs dismiss    # Dismiss update check
  *
  * See DATA_CONTRACT.md for the full system/user layer definitions.
  */
 
-import { execFileSync, execSync } from 'child_process';
+import { execFileSync } from 'child_process';
 import { readFileSync, writeFileSync, existsSync, unlinkSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
@@ -124,6 +126,29 @@ function revertPaths(paths) {
 function addPaths(paths) {
   if (paths.length === 0) return;
   git('add', '--', ...paths);
+}
+
+function maybeInstallDependencies() {
+  const allowInstall = process.env.CAREER_OPS_ALLOW_DEP_INSTALL === '1';
+  if (!allowInstall) {
+    console.log('Skipping dependency install (set CAREER_OPS_ALLOW_DEP_INSTALL=1 to opt in).');
+    return;
+  }
+
+  if (!existsSync(join(ROOT, 'package-lock.json'))) {
+    console.log('Skipping dependency install (no package-lock.json found).');
+    return;
+  }
+
+  try {
+    execFileSync(
+      'npm',
+      ['ci', '--ignore-scripts', '--no-audit', '--no-fund', '--silent'],
+      { cwd: ROOT, timeout: 120000, stdio: 'inherit' },
+    );
+  } catch {
+    console.log('Dependency install failed or skipped; run npm ci manually if needed.');
+  }
 }
 
 // ── CHECK ───────────────────────────────────────────────────────
@@ -239,12 +264,8 @@ async function apply() {
       process.exit(1);
     }
 
-    // 5. Install any new dependencies
-    try {
-      execSync('npm install --silent', { cwd: ROOT, timeout: 60000 });
-    } catch {
-      console.log('npm install skipped (may need manual run)');
-    }
+    // 5. Optionally install dependencies in a safer, explicit opt-in mode
+    maybeInstallDependencies();
 
     // 6. Commit the update
     const remote = localVersion(); // Re-read after checkout updated VERSION
