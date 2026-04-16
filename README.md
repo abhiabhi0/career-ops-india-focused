@@ -4,6 +4,9 @@ This repository is copied from [santifer/career-ops](https://github.com/santifer
 
 Primary goal: help India-based candidates target remote jobs worldwide that explicitly allow India-resident applicants.
 
+### 🚀 Resilient Discovery System
+This fork features an advanced **Resilient Job Discovery** pipeline (`search-scan.js`) that is profile-driven and highly resistant to search engine blocks. It ensures you find the right roles without manual browsing or CAPTCHA frustration.
+
 ## Prerequisites
 
 - Node.js 18+
@@ -49,15 +52,13 @@ Recommended updates:
   - set your strengths and proof points
   - set your location and filtering policy
 
-## India-Remote Filtering Guidance
+## 📍 Strict India-Remote Filtering
 
-In `portals.yml`, prioritize roles that clearly allow India-resident candidates:
+The system is now **fully autonomous** regarding location. 
 
-- `Remote - India`
-- `remote from India`
-- `APAC`
-- `global remote`
-- `work from anywhere` (if eligibility is clear)
+1. **Auto-Profile Reading**: The scanner automatically reads your `location.country` from `config/profile.yml`.
+2. **Strict Filtering**: It uses a scoring engine to exclude "US Only" or "Europe Only" roles, even if labeled "Remote".
+3. **Targeted Search**: It only keeps roles that are explicitly open to India-resident candidates (Remote-India, APAC, or Global Remote).
 
 Avoid roles that are remote but geographically restricted to non-India regions.
 
@@ -113,41 +114,36 @@ To ensure **every** agent behaves the same, treat this section as required repo 
 6. `.agents/workflows/career-ops-scan.md`
 7. `modes/scan.md`
 
-### Definition of done for `career-ops scan`
+### 🤖 Agent-Led Workflow
 
-A scan run is considered **complete** only if all are true:
+The AI Agent (Antigravity, Claude, or Cursor) is the "brain" that executes the heavy lifting. **Do not write CVs manually.** Use the agent to evaluate discovered jobs and generate artifacts.
 
-1. New roles are discovered and added to `data/pipeline.md` (if any).
+#### 1. Discovery (Automatic)
+Run `node search-scan.js` to find new leads. These are automatically added to `data/pipeline.md` with strict location checks.
+
+#### 2. Evaluation & CV Drafting (Agent)
+Ask your AI coding agent:
+> "Process my new leads in data/pipeline.md. Evaluate each against my profile. For the best matches, generate a tailored resume.md and answers.md in the applications/ folder."
+
+#### 3. Definition of Done
+A run is complete only when:
+1. New roles are added to `data/pipeline.md`.
 2. `data/scan-history.tsv` is updated.
-3. For each newly added role, create/update:
-   - `applications/golang-jobs-{YYYY-MM-DD}/{role-slug}/resume.md`
-   - `applications/golang-jobs-{YYYY-MM-DD}/{role-slug}/answers.md`
-4. Update `applications/golang-jobs-{YYYY-MM-DD}/README.md` with one row per role.
-5. If apply automation fails, keep artifacts and mark status as blocked (do not discard work).
-
-If any item above is missing, the run is **not complete**.
-
-### Copy-paste enforcement prompt (use with any agent)
-
-Use this exact prompt when starting a run:
-
-```text
-Follow repository policy in README.md "Universal Agent Contract".
-Run career-ops scan end-to-end.
-Do not stop at URL discovery.
-For each newly discovered role, generate applications/golang-jobs-{today}/{role-slug}/resume.md and answers.md, and update applications/golang-jobs-{today}/README.md.
-If apply flow fails, keep artifacts and mark blocked status.
-Return only after all definition-of-done checks pass.
-```
+3. **AI Agent** generates a custom `resume.md` and `answers.md` for each role in `applications/golang-jobs-{date}/{role-slug}/`.
+4. Tracker README is updated.
 
 ## Recommended Workflow
 
-1. Run scan: `/career-ops scan`
-2. Evaluate best matches: `/career-ops {job-url}`
-3. Generate tailored resume: `/career-ops pdf` or full auto-pipeline
-4. Keep tracker clean:
+1. Run unified scan: `npm run scan:all` (or `node search-scan.js`)
+2. API-only scan (no key needed): `npm run scan:api`
+3. Search-only scan: `npm run scan:search`
+4. Evaluate best matches: `/career-ops {job-url}`
+5. Generate tailored resume: `/career-ops pdf` or full auto-pipeline
+6. Keep tracker clean:
    - `npm run verify`
    - `npm run merge` (after batch evaluations)
+
+> **Scanner docs**: See [docs/SEARCH-SCAN.md](docs/SEARCH-SCAN.md) for full setup guide, Brave API key configuration, CLI reference, and examples.
 
 ## Notes
 
@@ -155,3 +151,4 @@ Return only after all definition-of-done checks pass.
 - Keep personal customization in `config/profile.yml` and `modes/_profile.md`.
 - If a role is not remote or does not support India-resident candidates, skip it.
 - In this fork, `career-ops scan` should continue after discovery and prepare per-role artifacts in `applications/golang-jobs-{date}/` (`resume.md` + `answers.md` + batch README row), even when auto-apply cannot be completed.
+
