@@ -121,6 +121,8 @@ The AI Agent (Antigravity, Claude, or Cursor) is the "brain" that executes the h
 #### 1. Discovery (Automatic)
 Run `node search-scan.js` to find new leads. These are automatically added to `data/pipeline.md` with strict location checks.
 
+For ready-to-copy commands for Naukri, Instahyre, Cutshort, Brave-only runs, API-only mode, and anti-block usage, see [docs/SEARCH-SCAN.md](docs/SEARCH-SCAN.md).
+
 #### 2. Evaluation & CV Drafting (Agent)
 Ask your AI coding agent:
 > "Process my new leads in data/pipeline.md. Evaluate each against my profile. For the best matches, generate a tailored resume.md and answers.md in the applications/ folder."
@@ -151,4 +153,3 @@ A run is complete only when:
 - Keep personal customization in `config/profile.yml` and `modes/_profile.md`.
 - If a role is not remote or does not support India-resident candidates, skip it.
 - In this fork, `career-ops scan` should continue after discovery and prepare per-role artifacts in `applications/golang-jobs-{date}/` (`resume.md` + `answers.md` + batch README row), even when auto-apply cannot be completed.
-
