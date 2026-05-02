@@ -116,7 +116,13 @@ node search-scan.js --engine brave --limit 20
 
 #### Targeted India board searches
 
+These commands are not all equally reliable. The current scanner has explicit
+URL extraction support for some portals and only best-effort fallback support
+for others.
+
 ```bash
+# Confirmed / first-class supported
+
 # Naukri only
 node search-scan.js --search-only --query "naukri" --limit 5
 
@@ -126,19 +132,10 @@ node search-scan.js --search-only --query "instahyre" --limit 5
 # Cutshort only
 node search-scan.js --search-only --query "cutshort" --limit 5
 
-# Foundit only
-node search-scan.js --search-only --query "foundit" --limit 5
-
-# Shine only
-node search-scan.js --search-only --query "shine" --limit 5
-
-# Indeed India only
-node search-scan.js --search-only --query "indeed" --limit 5
-
 # Freshteam only
 node search-scan.js --search-only --query "freshteam" --limit 5
 
-# LinkedIn India searches only
+# LinkedIn India searches only (works, but search engines may return lower yield)
 node search-scan.js --search-only --query "linkedin" --limit 5
 
 # Wellfound only
@@ -146,9 +143,22 @@ node search-scan.js --search-only --query "wellfound" --limit 5
 
 # Workable only
 node search-scan.js --search-only --query "workable" --limit 5
+
+# Best-effort / experimental
+
+# Foundit only
+node search-scan.js --search-only --query "foundit" --limit 5
+
+# Shine only
+node search-scan.js --search-only --query "shine" --limit 5
 ```
 
+`Indeed` is not recommended currently. The search query exists conceptually,
+but the current extractor does not reliably recognize Indeed result URLs.
+
 #### Browser-search alternatives when Google blocks
+
+Brave commands below require `BRAVE_API_KEY` in `.env`.
 
 ```bash
 # DuckDuckGo only, small batch

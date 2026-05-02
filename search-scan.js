@@ -187,6 +187,101 @@ const JOB_URL_PATTERNS = [
   /freshteam\.com\/jobs\/[^?#]+/i,
 ];
 
+const SEARCH_PORTAL_HOSTS = {
+  ashby: ['jobs.ashbyhq.com'],
+  greenhouse: ['boards.greenhouse.io', 'job-boards.greenhouse.io'],
+  lever: ['jobs.lever.co'],
+  wellfound: ['wellfound.com'],
+  linkedin: ['linkedin.com'],
+  naukri: ['naukri.com'],
+  instahyre: ['instahyre.com'],
+  cutshort: ['cutshort.io'],
+  workable: ['apply.workable.com'],
+  freshteam: ['freshteam.com'],
+  foundit: ['foundit.in', 'monsterindia.com'],
+  shine: ['shine.com'],
+  indeed: ['indeed.com', 'in.indeed.com'],
+  remoteok: ['remoteok.com'],
+  weworkremotely: ['weworkremotely.com'],
+  workatastartup: ['workatastartup.com'],
+  ycombinator: ['ycombinator.com'],
+  arc: ['arc.dev'],
+  turing: ['turing.com'],
+  contra: ['contra.com'],
+  crossover: ['crossover.com'],
+  remoterocketship: ['remoterocketship.com'],
+};
+
+function normalizeHost(value = '') {
+  return value
+    .toLowerCase()
+    .replace(/^https?:\/\//, '')
+    .replace(/^www\./, '')
+    .split('/')[0]
+    .split('?')[0]
+    .split('#')[0]
+    .replace(/[),.'"]+$/g, '')
+    .trim();
+}
+
+function hostMatchesAllowed(host, allowedHosts) {
+  return allowedHosts.some(allowed => host === allowed || host.endsWith(`.${allowed}`));
+}
+
+function getAllowedHostsFromQuery(query = '') {
+  const hosts = new Set();
+  for (const match of query.matchAll(/\bsite:([^\s()]+)/gi)) {
+    const host = normalizeHost(match[1]);
+    if (host) hosts.add(host);
+  }
+  return [...hosts];
+}
+
+function getAllowedHostsFromFilter(filter = '') {
+  const lower = filter.toLowerCase().trim();
+  if (!lower) return [];
+
+  const hosts = new Set();
+  for (const [alias, aliasHosts] of Object.entries(SEARCH_PORTAL_HOSTS)) {
+    if (lower === alias || lower.includes(alias)) {
+      for (const host of aliasHosts) hosts.add(host);
+    }
+  }
+
+  if (lower.includes('.')) {
+    const host = normalizeHost(lower);
+    if (host) hosts.add(host);
+  }
+
+  return [...hosts];
+}
+
+function getAllowedHosts(query = '', filter = '') {
+  return [...new Set([
+    ...getAllowedHostsFromQuery(query),
+    ...getAllowedHostsFromFilter(filter),
+  ])];
+}
+
+function urlMatchesAllowedHosts(url, allowedHosts) {
+  if (!allowedHosts.length) return true;
+  try {
+    const host = normalizeHost(new URL(url).hostname);
+    return hostMatchesAllowed(host, allowedHosts);
+  } catch {
+    return false;
+  }
+}
+
+function makeQuerySpec(name, query, company, filter = '') {
+  return {
+    name,
+    query,
+    company,
+    allowedHosts: getAllowedHosts(query, filter),
+  };
+}
+
 // ── Brave Search (optional — needs BRAVE_API_KEY) ──────────────────────
 
 async function braveSearch(query, count = BRAVE_RESULTS) {
@@ -675,11 +770,11 @@ async function main() {
       ];
       
       for (const site of boards) {
-        queries.push({
-          name: `Profile: ${role} @ ${site.split(':')[1].split('.')[0]}`,
-          query: `${site} "${role}" (${locationStr} OR ${remoteKeywords})`,
-          company: null
-        });
+        const name = `Profile: ${role} @ ${site.split(':')[1].split('.')[0]}`;
+        const query = `${site} "${role}" (${locationStr} OR ${remoteKeywords})`;
+        if (qFilter && !query.toLowerCase().includes(qFilter) &&
+          !name.toLowerCase().includes(qFilter)) continue;
+        queries.push(makeQuerySpec(name, query, null, qFilter));
       }
     }
   }
@@ -691,7 +786,7 @@ async function main() {
       if (filterCo && !q.name?.toLowerCase().includes(filterCo)) continue;
       if (qFilter && !q.query?.toLowerCase().includes(qFilter) &&
         !q.name?.toLowerCase().includes(qFilter)) continue;
-      queries.push({ name: q.name || 'query', query: q.query, company: null });
+      queries.push(makeQuerySpec(q.name || 'query', q.query, null, qFilter));
     }
   }
 
@@ -700,11 +795,11 @@ async function main() {
     if (filterCo && !c.name?.toLowerCase().includes(filterCo)) continue;
     if (qFilter && !c.scan_query.toLowerCase().includes(qFilter) &&
       !c.name?.toLowerCase().includes(qFilter)) continue;
-    queries.push({ name: c.name, query: c.scan_query, company: c.name });
+    queries.push(makeQuerySpec(c.name, c.scan_query, c.name, qFilter));
   }
 
   if (rawQuery) {
-    queries.unshift({ name: 'raw-query', query: rawQuery, company: null });
+    queries.unshift(makeQuerySpec('raw-query', rawQuery, null));
   }
 
   // Deduplicate queries by query string
@@ -794,7 +889,7 @@ async function main() {
 
   // ── Phase 2: Web search ─────────────────────────────────────────────
 
-  let searchStats = { queries: 0, found: 0, added: 0, locFiltered: 0 };
+  let searchStats = { queries: 0, found: 0, added: 0, locFiltered: 0, siteFiltered: 0 };
   const engineLabel = engineFlag || 'auto (Google -> DDG -> Brave)';
 
   if (!apiOnly) {
@@ -805,79 +900,88 @@ async function main() {
     const total = Math.min(uniqueQueries.length, limit);
     console.log(`  ${total} queries to run\n`);
 
-    // Initialize browser if needed
-    const needsBrowser = !engineFlag || engineFlag !== 'brave';
-    if (needsBrowser) {
-      process.stdout.write('  Launching browser ... ');
-      try {
-        await initBrowser(headed);
-        console.log('OK');
-      } catch (err) {
-        console.log('FAILED');
-        console.error(`\n  ✗  Could not launch browser: ${err.message}`);
-        console.error('     Run: npx playwright install chromium');
-        process.exit(1);
+    if (total === 0) {
+      console.log('  No search queries matched the current filters.');
+    } else {
+      // Initialize browser if needed
+      const needsBrowser = !engineFlag || engineFlag !== 'brave';
+      if (needsBrowser) {
+        process.stdout.write('  Launching browser ... ');
+        try {
+          await initBrowser(headed);
+          console.log('OK');
+        } catch (err) {
+          console.log('FAILED');
+          console.error(`\n  ✗  Could not launch browser: ${err.message}`);
+          console.error('     Run: npx playwright install chromium');
+          process.exit(1);
+        }
       }
-    }
 
-    const searchOffers = [];
-    let queried = 0;
-    const delayMs = BROWSER_DELAY_MS;
+      const searchOffers = [];
+      let queried = 0;
+      const delayMs = BROWSER_DELAY_MS;
 
-    const engineList = engineFlag ? [engineFlag] : ['google', 'ddg', 'brave'];
+      const engineList = engineFlag ? [engineFlag] : ['google', 'ddg', 'brave'];
 
-    for (const { name, query, company } of uniqueQueries.slice(0, limit)) {
-      queried++;
-      process.stdout.write(`  [${queried}/${total}] ${name} ... `);
-      try {
-        const result = await unifiedSearch(query, engineList);
+      for (const { name, query, company, allowedHosts } of uniqueQueries.slice(0, limit)) {
+        queried++;
+        process.stdout.write(`  [${queried}/${total}] ${name} ... `);
+        try {
+          const result = await unifiedSearch(query, engineList);
 
-        const jobs = extractJobs(result, company);
-        searchStats.found += jobs.length;
-        let added = 0;
-        for (const job of jobs) {
-          if (!isLocationEligible(job, activeLocFilter)) {
-            searchStats.locFiltered++;
-            continue; 
+          const jobs = extractJobs(result, company);
+          searchStats.found += jobs.length;
+          let added = 0;
+          for (const job of jobs) {
+            if (!urlMatchesAllowedHosts(job.url, allowedHosts || [])) {
+              searchStats.siteFiltered++;
+              continue;
+            }
+
+            if (!isLocationEligible(job, activeLocFilter)) {
+              searchStats.locFiltered++;
+              continue; 
+            }
+
+            if (dryRun) {
+              console.log(`\n      [FOUND] ${job.company} | ${job.title}`);
+              console.log(`      Link: ${job.url}`);
+              console.log(`      Loc : ${job.location || 'N/A'}`);
+            }
+
+            if (!titleFilter(job.title) && !titleFilter(job.rawTitle || '')) continue;
+            if (seenUrls.has(job.url)) continue;
+            const key = `${job.company.toLowerCase()}::${job.title.toLowerCase()}`;
+            if (seenCompanyRoles.has(key)) continue;
+            
+            seenUrls.add(job.url);
+            seenCompanyRoles.add(key);
+            searchOffers.push({ ...job, source: 'web-search' });
+            added++;
           }
-
-          if (dryRun) {
-            console.log(`\n      [FOUND] ${job.company} | ${job.title}`);
-            console.log(`      Link: ${job.url}`);
-            console.log(`      Loc : ${job.location || 'N/A'}`);
-          }
-
-          if (!titleFilter(job.title) && !titleFilter(job.rawTitle || '')) continue;
-          if (seenUrls.has(job.url)) continue;
-          const key = `${job.company.toLowerCase()}::${job.title.toLowerCase()}`;
-          if (seenCompanyRoles.has(key)) continue;
+          console.log(`${jobs.length} results, ${added} new`);
+        } catch (err) {
+          process.stdout.write(`ERROR: ${err.message}\n`);
+          allErrors.push({ name, phase: 'search', error: err.message });
           
-          seenUrls.add(job.url);
-          seenCompanyRoles.add(key);
-          searchOffers.push({ ...job, source: 'web-search' });
-          added++;
+          if (err.message.includes('All engines failed')) {
+             console.log(`\n  ⚠  Critical failure: ${err.message}.`);
+             console.log('     Recommendation: Reduce --limit or try again later.');
+             break;
+          }
         }
-        console.log(`${jobs.length} results, ${added} new`);
-      } catch (err) {
-        process.stdout.write(`ERROR: ${err.message}\n`);
-        allErrors.push({ name, phase: 'search', error: err.message });
-        
-        if (err.message.includes('All engines failed')) {
-           console.log(`\n  ⚠  Critical failure: ${err.message}.`);
-           console.log('     Recommendation: Reduce --limit or try again later.');
-           break;
-        }
+        if (queried < total) await sleep(delayMs);
       }
-      if (queried < total) await sleep(delayMs);
-    }
 
-    if (needsBrowser) {
-      await closeBrowser();
-    }
+      if (needsBrowser) {
+        await closeBrowser();
+      }
 
-    searchStats.queries = queried;
-    searchStats.added = searchOffers.length;
-    allNewOffers.push(...searchOffers);
+      searchStats.queries = queried;
+      searchStats.added = searchOffers.length;
+      allNewOffers.push(...searchOffers);
+    }
   }
 
   // ── Write results ───────────────────────────────────────────────────
@@ -907,6 +1011,7 @@ async function main() {
     console.log(`\n  Web search (${engineLabel}):`);
     console.log(`    Queries run        : ${searchStats.queries}`);
     console.log(`    Total results      : ${searchStats.found}`);
+    console.log(`    Filtered by site   : ${searchStats.siteFiltered}`);
     console.log(`    Filtered by loc    : ${searchStats.locFiltered}`);
     console.log(`    New offers added   : ${searchStats.added}`);
   }
