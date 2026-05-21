@@ -14,10 +14,12 @@
     "update": "node update-system.mjs apply",
     "rollback": "node update-system.mjs rollback",
     "liveness": "node check-liveness.mjs",
+    "apply-assist": "node apply-assist.mjs",
     "scan": "node scan.mjs",
     "search-scan": "node search-scan.js",
     "scan:all": "node search-scan.js",
     "scan:api": "node search-scan.js --api-only",
+    "scan:site": "node search-scan.js --site-only",
     "scan:search": "node search-scan.js --search-only"
   },
   "keywords": [
@@ -37,6 +39,8 @@
   "dependencies": {
     "dotenv": "^17.4.2",
     "js-yaml": "^4.1.1",
-    "playwright": "^1.58.1"
+    "playwright": "^1.58.1",
+    "playwright-extra": "^4.3.6",
+    "puppeteer-extra-plugin-stealth": "^2.11.2"
   }
 }

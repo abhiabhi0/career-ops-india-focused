@@ -5,7 +5,7 @@ This repository is copied from [santifer/career-ops](https://github.com/santifer
 Primary goal: help India-based candidates target remote jobs worldwide that explicitly allow India-resident applicants.
 
 ### 🚀 Resilient Discovery System
-This fork features an advanced **Resilient Job Discovery** pipeline (`search-scan.js`) that is profile-driven and highly resistant to search engine blocks. It ensures you find the right roles without manual browsing or CAPTCHA frustration.
+This fork features an advanced **Resilient Job Discovery** pipeline (`search-scan.js`) that is profile-driven and highly resistant to search engine blocks. It combines ATS APIs, direct browser scraping with `Scrapling`, and search fallback so you can find the right roles without manual browsing or CAPTCHA frustration.
 
 ## Prerequisites
 
@@ -19,6 +19,10 @@ This fork features an advanced **Resilient Job Discovery** pipeline (`search-sca
 # 1) Install dependencies
 npm install
 npx playwright install chromium
+
+# 1b) Install Scrapling fetchers for direct portal scraping
+python3 -m venv .venv-scrapling
+.venv-scrapling/bin/pip install "scrapling[fetchers]"
 
 # 2) Validate local setup
 npm run doctor
@@ -119,7 +123,7 @@ To ensure **every** agent behaves the same, treat this section as required repo 
 The AI Agent (Antigravity, Claude, or Cursor) is the "brain" that executes the heavy lifting. **Do not write CVs manually.** Use the agent to evaluate discovered jobs and generate artifacts.
 
 #### 1. Discovery (Automatic)
-Run `node search-scan.js` to find new leads. These are automatically added to `data/pipeline.md` with strict location checks.
+Run `node search-scan.js` to find new leads. The scanner reads `config/profile.yml`, hits ATS APIs directly, uses `Scrapling` for career pages and portal result pages, and then falls back to search engines when needed. New leads are automatically added to `data/pipeline.md` with strict location checks.
 
 For ready-to-copy commands for Naukri, Instahyre, Cutshort, Brave-only runs, API-only mode, and anti-block usage, see [docs/SEARCH-SCAN.md](docs/SEARCH-SCAN.md).
 
@@ -139,13 +143,16 @@ A run is complete only when:
 1. Run unified scan: `npm run scan:all` (or `node search-scan.js`)
 2. API-only scan (no key needed): `npm run scan:api`
 3. Search-only scan: `npm run scan:search`
-4. Evaluate best matches: `/career-ops {job-url}`
-5. Generate tailored resume: `/career-ops pdf` or full auto-pipeline
-6. Keep tracker clean:
+4. Scan + prepare apply-assist artifacts: `node search-scan.js --search-only --apply-assist`
+5. Evaluate best matches: `/career-ops {job-url}`
+6. Generate tailored resume: `/career-ops pdf` or full auto-pipeline
+7. Keep tracker clean:
    - `npm run verify`
    - `npm run merge` (after batch evaluations)
 
 > **Scanner docs**: See [docs/SEARCH-SCAN.md](docs/SEARCH-SCAN.md) for full setup guide, Brave API key configuration, CLI reference, and examples.
+
+Tip: `search-scan.js` auto-detects `.venv-scrapling/bin/python`. If you keep Scrapling in another virtualenv, set `SCRAPLING_PYTHON=/absolute/path/to/python`.
 
 ## Notes
 
@@ -153,3 +160,4 @@ A run is complete only when:
 - Keep personal customization in `config/profile.yml` and `modes/_profile.md`.
 - If a role is not remote or does not support India-resident candidates, skip it.
 - In this fork, `career-ops scan` should continue after discovery and prepare per-role artifacts in `applications/golang-jobs-{date}/` (`resume.md` + `answers.md` + batch README row), even when auto-apply cannot be completed.
+- Apply-assist may upload your local `resume.pdf` and inspect forms, but it always stops before the final submit action.

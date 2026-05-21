@@ -29,6 +29,9 @@ modes/_profile.md
 # Generated
 .resolved-prompt-*
 node_modules/
+.venv-pydoll/
+.venv-scrapling/
+__pycache__/
 
 # OS
 .DS_Store
