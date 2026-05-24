@@ -65,6 +65,10 @@ def clean_text(value):
     return " ".join(str(value or "").split()).strip()
 
 
+def log_progress(message):
+    print(message, file=sys.stderr, flush=True)
+
+
 async def click_keyword_buttons(page, keywords, limit=3):
     script = """
 ({ keywords, limit }) => {
@@ -206,16 +210,23 @@ async def main():
     session_class, session_kwargs = build_session(args)
 
     async with session_class(**session_kwargs) as session:
+        total = len(targets)
+
         async def worker(index, target):
+            name = target.get("name") or target.get("url") or "unknown"
+            log_progress(f"    [Scrapling {index + 1}/{total}] START {name}")
             try:
                 results[index] = await scrape_target(session, target, args)
+                link_count = len((results[index] or {}).get("links") or [])
+                log_progress(f"    [Scrapling {index + 1}/{total}] DONE  {name} ({link_count} links)")
             except Exception as exc:
                 results[index] = {
-                    "name": target.get("name") or target.get("url") or "unknown",
+                    "name": name,
                     "url": target.get("url"),
                     "error": str(exc),
                     "links": [],
                 }
+                log_progress(f"    [Scrapling {index + 1}/{total}] ERROR {name} :: {exc}")
 
         await asyncio.gather(*(worker(index, target) for index, target in enumerate(targets)))
 

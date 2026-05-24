@@ -313,6 +313,7 @@ node search-scan.js --search-only --engine brave --limit 10 --dry-run
 | `--headed` | Open browser window to see the search in action (debugging). |
 | `--dry-run` | Preview results in console without saving to files. |
 | `--apply-assist` | After scanning, prepare application artifacts for all pending `pipeline.md` jobs and stop before final submission. |
+| `--no-stealth-search` | Disable the Playwright stealth search and fall back completely to the original Scrapling fetching logic. |
 
 ## Troubleshooting
 

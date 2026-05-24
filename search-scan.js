@@ -19,6 +19,7 @@
  *   node search-scan.js --company Grafana # filter to one company
  *   node search-scan.js --query "Golang"  # filter search queries by keyword
  *   node search-scan.js --limit 5         # limit search queries to N
+ *   node search-scan.js --posted 3d       # keep jobs posted within last 3 days (default: 1d)
  *   node search-scan.js --headed          # show the browser window (debug)
  *   node search-scan.js --apply-assist    # prepare application artifacts for pending pipeline jobs
  *
@@ -34,6 +35,8 @@ import { spawn } from 'child_process';
 import { dirname, resolve } from 'path';
 import { fileURLToPath } from 'url';
 import { createRequire } from 'module';
+import pLimit from 'p-limit';
+import { runStealthSearch } from './src/stealth-search.mjs';
 const require = createRequire(import.meta.url);
 const ROOT_DIR = dirname(fileURLToPath(import.meta.url));
 
@@ -42,24 +45,24 @@ const yaml = require('js-yaml');
 
 // ── Config ─────────────────────────────────────────────────────────────
 
-const PORTALS_PATH    = 'portals.yml';
-const SCAN_HISTORY    = 'data/scan-history.tsv';
-const PIPELINE_PATH   = 'data/pipeline.md';
-const APPLICATIONS    = 'data/applications.md';
+const PORTALS_PATH = 'portals.yml';
+const SCAN_HISTORY = 'data/scan-history.tsv';
+const PIPELINE_PATH = 'data/pipeline.md';
+const APPLICATIONS = 'data/applications.md';
 const APPLY_ASSIST_SCRIPT = resolve(ROOT_DIR, 'apply-assist.mjs');
 
-const API_CONCURRENCY  = 10;
-const API_TIMEOUT_MS   = 10_000;
-const BRAVE_API_KEY    = process.env.BRAVE_API_KEY;
-const BRAVE_API_URL    = 'https://api.search.brave.com/res/v1/web/search';
-const BRAVE_DELAY_MS   = 1200;
-const BRAVE_RESULTS    = 10;
+const API_CONCURRENCY = 10;
+const API_TIMEOUT_MS = 10_000;
+const BRAVE_API_KEY = process.env.BRAVE_API_KEY;
+const BRAVE_API_URL = 'https://api.search.brave.com/res/v1/web/search';
+const BRAVE_DELAY_MS = 1200;
+const BRAVE_RESULTS = 10;
 const BRAVE_TIMEOUT_MS = 12_000;
 const SCRAPLING_DELAY_MS = 1200;
 const BROWSER_DELAY_MS = 3000;  // be respectful to Google/DDG
-const BROWSER_RESULTS  = 10;
-const SCRAPLING_SCRIPT  = resolve(ROOT_DIR, 'scripts/scrapling-site-scrape.py');
-const SCRAPLING_PYTHON  = resolve(ROOT_DIR, '.venv-scrapling/bin/python');
+const BROWSER_RESULTS = 10;
+const SCRAPLING_SCRIPT = resolve(ROOT_DIR, 'scripts/scrapling-site-scrape.py');
+const SCRAPLING_PYTHON = resolve(ROOT_DIR, '.venv-scrapling/bin/python');
 
 const PROFILE_PATH = 'config/profile.yml';
 
@@ -81,7 +84,7 @@ function detectScraplingPython() {
   return 'python3';
 }
 
-function runProcess(command, args, { input, env = {} } = {}) {
+function runProcess(command, args, { input, env = {}, onStdout, onStderr } = {}) {
   return new Promise((resolvePromise, rejectPromise) => {
     const child = spawn(command, args, {
       cwd: ROOT_DIR,
@@ -92,8 +95,16 @@ function runProcess(command, args, { input, env = {} } = {}) {
     let stdout = '';
     let stderr = '';
 
-    child.stdout.on('data', chunk => { stdout += chunk.toString(); });
-    child.stderr.on('data', chunk => { stderr += chunk.toString(); });
+    child.stdout.on('data', chunk => {
+      const text = chunk.toString();
+      stdout += text;
+      if (onStdout) onStdout(text);
+    });
+    child.stderr.on('data', chunk => {
+      const text = chunk.toString();
+      stderr += text;
+      if (onStderr) onStderr(text);
+    });
     child.on('error', rejectPromise);
     child.on('close', code => resolvePromise({ code, stdout, stderr }));
 
@@ -127,6 +138,7 @@ async function scrapeCareerSitesWithScrapling(targets, headed = false) {
   const { code, stdout, stderr } = await runProcess(python, args, {
     input: payload,
     env: { SCRAPLING_CHROMIUM_PATH: chromiumPath },
+    onStderr: text => process.stdout.write(text),
   });
 
   if (code !== 0) {
@@ -198,12 +210,21 @@ function detectApi(company) {
 
 // ── API parsers ────────────────────────────────────────────────────────
 
+function pickFirstValue(...values) {
+  for (const value of values) {
+    if (value !== undefined && value !== null && String(value).trim()) return value;
+  }
+  return '';
+}
+
 function parseGreenhouse(json, companyName) {
   return (json.jobs || []).map(j => ({
     title: j.title || '',
     url: j.absolute_url || '',
     company: companyName,
     location: j.location?.name || '',
+    description: pickFirstValue(j.content, j.metadata?.map?.(m => m?.value).join(' ')),
+    postedAt: pickFirstValue(j.updated_at, j.created_at),
   }));
 }
 
@@ -213,6 +234,8 @@ function parseAshby(json, companyName) {
     url: j.jobUrl || '',
     company: companyName,
     location: j.location || '',
+    description: pickFirstValue(j.descriptionPlain, j.descriptionHtml, j.teamName),
+    postedAt: pickFirstValue(j.publishedDate, j.createdAt, j.updatedAt),
   }));
 }
 
@@ -223,6 +246,8 @@ function parseLever(json, companyName) {
     url: j.hostedUrl || '',
     company: companyName,
     location: j.categories?.location || '',
+    description: pickFirstValue(j.descriptionPlain, j.description, j.categories?.team),
+    postedAt: pickFirstValue(j.createdAt, j.updatedAt),
   }));
 }
 
@@ -303,10 +328,6 @@ const GENERIC_TITLE_HINTS = [
   'platform',
   'software',
   'golang',
-  'devops',
-  'sre',
-  'staff',
-  'principal',
   'lead',
 ];
 
@@ -354,7 +375,65 @@ const IRRELEVANT_TITLE_PHRASES = [
   'ios',
   'qa engineer',
   'manual test',
+  'platform engineer',
+  'site reliability',
+  'sre',
+  'devops',
+  'cloud engineer',
+  'infrastructure engineer',
+  'systems engineer',
+  'architect',
+  'manager',
+  'director',
+  'vice president',
+  'vp ',
+  'head of',
+  'principal',
+  'staff ',
+  'lead ',
 ];
+
+const TARGET_TITLE_PHRASES = [
+  'golang',
+  'go developer',
+  'go engineer',
+  'backend engineer',
+  'backend developer',
+  'software engineer',
+  'software developer',
+  'server engineer',
+  'api engineer',
+];
+
+const GO_PRIMARY_SIGNALS = [
+  'golang',
+  'go developer',
+  'go engineer',
+  'written in go',
+  'go backend',
+  'go lang',
+  'language: go',
+  'primary language: go',
+  'go microservices',
+  'go services',
+  'go api',
+  'grpc',
+];
+
+const SENIORITY_BLOCKLIST = [
+  'staff',
+  'principal',
+  'lead',
+  'manager',
+  'director',
+  'vice president',
+  'vp ',
+  'head of',
+];
+
+const EXPERIENCE_MIN_YEARS = 3;
+const EXPERIENCE_MAX_YEARS = 7;
+const DEFAULT_POSTED_WINDOW = '1d';
 
 const NON_JOB_URL_PATTERNS = [
   /\/career\/.*\/salaries/i,
@@ -510,25 +589,24 @@ function classifyJobRelevance(job = {}) {
   if (IRRELEVANT_TITLE_PHRASES.some(phrase => title.includes(phrase))) {
     return { keep: false, reason: 'irrelevant_title' };
   }
-
-  const positiveSignals = [
-    'golang',
-    'go engineer',
-    'go developer',
-    'backend',
-    'site reliability',
-    'sre',
-    'platform engineer',
-    'devops',
-    'distributed systems',
-    'microservices',
-  ];
+  if (SENIORITY_BLOCKLIST.some(phrase => title.includes(phrase))) {
+    return { keep: false, reason: 'seniority_out_of_range' };
+  }
 
   const applySignals = APPLY_HINTS.some(hint => text.includes(hint));
-  const roleSignals = positiveSignals.some(signal => title.includes(signal) || description.includes(signal));
+  const roleSignals = TARGET_TITLE_PHRASES.some(signal => title.includes(signal));
+  const goSignals = GO_PRIMARY_SIGNALS.some(signal => title.includes(signal) || description.includes(signal));
 
   if (!roleSignals) {
     return { keep: false, reason: 'missing_role_signal' };
+  }
+  if (!goSignals) {
+    return { keep: false, reason: 'missing_go_signal' };
+  }
+
+  const experienceRange = extractExperienceRange(text);
+  if (experienceRange && !rangesOverlap(experienceRange.min, experienceRange.max, EXPERIENCE_MIN_YEARS, EXPERIENCE_MAX_YEARS)) {
+    return { keep: false, reason: 'experience_out_of_range' };
   }
 
   if (!applySignals && !JOB_URL_PATTERNS.some(pattern => pattern.test(url))) {
@@ -536,6 +614,95 @@ function classifyJobRelevance(job = {}) {
   }
 
   return { keep: true, reason: 'relevant' };
+}
+
+function extractExperienceRange(text = '') {
+  const patterns = [
+    /(\d+)\s*(?:-|–|to)\s*(\d+)\s*\+?\s*(?:years|yrs?)/i,
+    /(\d+)\s*\+\s*(?:years|yrs?)/i,
+    /(?:experience|exp)[^\d]{0,12}(\d+)\s*(?:-|–|to)\s*(\d+)/i,
+    /(?:experience|exp)[^\d]{0,12}(\d+)\s*\+/i,
+  ];
+
+  for (const pattern of patterns) {
+    const match = text.match(pattern);
+    if (!match) continue;
+    if (match[2]) {
+      const min = Number(match[1]);
+      const max = Number(match[2]);
+      if (Number.isFinite(min) && Number.isFinite(max)) return { min, max };
+    } else {
+      const min = Number(match[1]);
+      if (Number.isFinite(min)) return { min, max: Infinity };
+    }
+  }
+
+  return null;
+}
+
+function rangesOverlap(minA, maxA, minB, maxB) {
+  return minA <= maxB && minB <= maxA;
+}
+
+function parsePostedWindow(input = DEFAULT_POSTED_WINDOW) {
+  const value = String(input || DEFAULT_POSTED_WINDOW).trim().toLowerCase();
+  const match = value.match(/^(\d+)\s*([dw])$/);
+  if (!match) {
+    throw new Error(`Invalid --posted value "${input}". Use formats like 1d, 3d, 7d, 1w.`);
+  }
+
+  const amount = Number(match[1]);
+  const unit = match[2];
+  const days = unit === 'w' ? amount * 7 : amount;
+  if (!Number.isFinite(days) || days <= 0) {
+    throw new Error(`Invalid --posted value "${input}". Days must be > 0.`);
+  }
+
+  return { raw: value, days };
+}
+
+function extractPostedAgeDays(text = '') {
+  const lower = String(text || '').toLowerCase();
+  if (!lower) return null;
+  if (/\b(today|just posted|few hours ago|moments ago)\b/.test(lower)) return 0;
+  if (/\byesterday\b/.test(lower)) return 1;
+
+  const hourMatch = lower.match(/(\d+)\s*(?:h|hr|hrs|hour|hours)\s+ago/);
+  if (hourMatch) return Number(hourMatch[1]) / 24;
+
+  const dayMatch = lower.match(/(\d+)\s*(?:d|day|days)\s+ago/);
+  if (dayMatch) return Number(dayMatch[1]);
+
+  const weekMatch = lower.match(/(\d+)\s*(?:w|week|weeks)\s+ago/);
+  if (weekMatch) return Number(weekMatch[1]) * 7;
+
+  return null;
+}
+
+function extractPostedTimestampAgeDays(value) {
+  if (!value) return null;
+  const timestamp = new Date(value);
+  if (Number.isNaN(timestamp.getTime())) return null;
+  return (Date.now() - timestamp.getTime()) / 86400000;
+}
+
+function getJobAgeDays(job = {}) {
+  const timestampAge = extractPostedTimestampAgeDays(job.postedAt);
+  if (timestampAge !== null) return timestampAge;
+
+  return extractPostedAgeDays([
+    job.postedText,
+    job.title,
+    job.rawTitle,
+    job.description,
+    job.location,
+  ].filter(Boolean).join(' '));
+}
+
+function isPostedWithinWindow(job = {}, postedWindow = { days: 1 }) {
+  const ageDays = getJobAgeDays(job);
+  if (ageDays === null) return true;
+  return ageDays <= postedWindow.days;
 }
 
 function urlMatchesAllowedHosts(url, allowedHosts) {
@@ -696,7 +863,7 @@ function detectPortalAlias(spec) {
   return null;
 }
 
-function buildPortalSearchUrl(alias, params) {
+function buildPortalSearchUrl(alias, params, postedWindow = { days: 1 }) {
   const keywords = params.keywords || '';
   const location = params.location || '';
   const keywordSlug = slugify(keywords);
@@ -707,6 +874,7 @@ function buildPortalSearchUrl(alias, params) {
       const url = new URL('https://www.linkedin.com/jobs/search/');
       if (keywords) url.searchParams.set('keywords', keywords);
       if (location) url.searchParams.set('location', location);
+      url.searchParams.set('f_TPR', `r${postedWindow.days * 86400}`);
       return url.toString();
     }
     case 'naukri': {
@@ -719,6 +887,7 @@ function buildPortalSearchUrl(alias, params) {
       const url = new URL('https://in.indeed.com/jobs');
       if (keywords) url.searchParams.set('q', keywords);
       if (location) url.searchParams.set('l', location);
+      url.searchParams.set('fromage', String(postedWindow.days));
       return url.toString();
     }
     case 'foundit': {
@@ -790,14 +959,14 @@ function buildPortalSearchUrl(alias, params) {
   }
 }
 
-function buildPortalSearchTarget(spec) {
+function buildPortalSearchTarget(spec, postedWindow = { days: 1 }) {
   const alias = detectPortalAlias(spec);
   if (!alias) return null;
 
   const params = inferPortalSearchParams(spec.query || '');
   if (!params.keywords) return null;
 
-  const url = buildPortalSearchUrl(alias, params);
+  const url = buildPortalSearchUrl(alias, params, postedWindow);
   if (!url) return null;
 
   return {
@@ -838,249 +1007,95 @@ async function braveSearch(query, count = BRAVE_RESULTS) {
   }
 }
 
-// ── Playwright + Google Search (default, free) ─────────────────────────
+// ── Scrapling Fallback ───────────────────────────────────────────────────
 
-let _browser = null;
-let _page = null;
-
-async function initBrowser(headed = false) {
-  const { chromium } = await import('playwright');
-  _browser = await chromium.launch({
-    headless: !headed,
-    args: [
-      '--disable-blink-features=AutomationControlled',
-      '--no-sandbox',
-    ],
-  });
-
-  const userAgents = [
-    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36',
-    'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
-    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36',
-  ];
-  const ua = userAgents[Math.floor(Math.random() * userAgents.length)];
-
-  const context = await _browser.newContext({
-    locale: 'en-IN',
-    timezoneId: 'Asia/Kolkata',
-    userAgent: ua,
-    viewport: { width: 1280, height: 800 },
-  });
-  _page = await context.newPage();
-
-  // Dismiss Google consent dialog if it appears
-  try {
-    await _page.goto('https://www.google.com', { waitUntil: 'domcontentloaded', timeout: 15000 });
-    // Handle "Before you continue" / cookie consent
-    const consentBtn = await _page.$('button:has-text("Accept all"), button:has-text("I agree"), button:has-text("Agree"), #L2AGLb');
-    if (consentBtn) {
-      await consentBtn.click();
-      await sleep(1000);
-    }
-  } catch {
-    // Not a fatal error — Google homepage may just load cleanly
+async function runScraplingFallback(query, engine) {
+  let url = '';
+  if (engine === 'google') {
+    url = `https://www.google.com/search?q=${encodeURIComponent(query)}`;
+  } else if (engine === 'ddg') {
+    url = `https://duckduckgo.com/?q=${encodeURIComponent(query)}&t=h_&ia=web`;
+  } else {
+    throw new Error('Unsupported engine for fallback');
   }
-}
-
-async function closeBrowser() {
-  if (_browser) {
-    await _browser.close();
-    _browser = null;
-    _page = null;
-  }
-}
-
-async function googleSearch(query, count = BROWSER_RESULTS) {
-  const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(query)}&num=${count}&hl=en&gl=in`;
-
-  await _page.goto(searchUrl, { waitUntil: 'domcontentloaded', timeout: 15000 });
-
-  // Check for CAPTCHA
-  const captcha = await _page.$('#captcha-form, #recaptcha, form[action*="sorry"]');
-  if (captcha) {
-    throw new Error('Google CAPTCHA detected — try again later or use --engine brave');
-  }
-
-  // Wait for results to appear
-  try {
-    await _page.waitForSelector('#search', { timeout: 8000 });
-  } catch {
-    const title = await _page.title();
-    if (title.includes('Robot') || title.includes('CAPTCHA')) {
-      throw new Error('Google CAPTCHA detected — try again later or use --engine brave');
-    }
-    throw new Error(`Google results did not load. Page title: "${title}"`);
-  }
-
-  // Extract organic results from Google SERP
-  const results = await _page.evaluate(() => {
-    const items = [];
-    const searchDiv = document.querySelector('#search');
-    if (!searchDiv) return [];
-
-    // Strategy: Find all <a> tags that don't look like internal Google links
-    for (const a of searchDiv.querySelectorAll('a')) {
-      const href = a.href;
-      if (!href || href.includes('google.com') || href.startsWith('javascript:')) continue;
-
-      // Titles are often in <h3> or <span> within a header-like structure
-      const titleEl = a.querySelector('h3, h1, span[role="heading"], div[role="heading"]');
-      const titleText = titleEl?.innerText.trim();
-      if (!titleText) continue;
-
-      // Walk up to find the result container for the snippet
-      let container = a.closest('.g') || a.closest('[data-hveid]') || a.parentElement;
-      let description = '';
-      if (container) {
-        // Try multiple known Google snippet selectors
-        const snippet = container.querySelector(
-          '[data-sncf="1"], .VwiC3b, [style*="-webkit-line-clamp"], .st, .yBF60b'
-        );
-        description = snippet?.innerText.trim() || '';
-      }
-
-      items.push({
-        url: href,
-        title: titleText,
-        description,
-      });
-    }
-    
-    // Log for debugging if needed (will be seen in Playwright logs if enabled)
-    // console.log(`Found ${items.length} organic links in #search`);
-
-    return items;
-  });
-
-  if (results.length === 0) {
-    // Fallback: try to find anything that looks like a result even if #search is weird
-    const fallbackResults = await _page.evaluate(() => {
-       const items = [];
-       for (const a of document.querySelectorAll('a')) {
-         const h3 = a.querySelector('h3, h1, span[role="heading"]');
-         if (!h3) continue;
-         const href = a.href;
-         if (!href || href.includes('google.com')) continue;
-         items.push({ url: href, title: h3.innerText.trim(), description: '' });
-       }
-       return items;
-    });
-    if (fallbackResults.length > 0) return { web: { results: fallbackResults } };
-  }
-
-  return { web: { results: results.slice(0, count) } };
-}
-
-// ── Playwright + DuckDuckGo Search (free) ──────────────────────────────
-
-async function ddgSearch(query, count = BROWSER_RESULTS) {
-  const searchUrl = `https://duckduckgo.com/?q=${encodeURIComponent(query)}&t=h_&ia=web`;
-
-  await _page.goto(searchUrl, { waitUntil: 'domcontentloaded', timeout: 15000 });
-
-  // DDG sometimes has a "Slow down" page or captcha-like challenges
-  const blocked = await _page.evaluate(() => {
-    const text = document.body.innerText.toLowerCase();
-    return text.includes('too many requests') || text.includes('automated access') || text.includes('robot');
-  });
-  if (blocked) {
-    throw new Error('DuckDuckGo CAPTCHA or Rate Limit detected');
-  }
-
-  // Wait for results
-  try {
-    // DDG results can be inside .react-results--main or legacy #links
-    await _page.waitForSelector('.react-results--main, article, #links, .links_main', { timeout: 10000 });
-  } catch {
-    const title = await _page.title();
-    // If we're on a CAPTCHA or "Slow down" page, title often reflects it
-    throw new Error(`DuckDuckGo blocked or results did not load. Page title: "${title}"`);
-  }
-
-  // Extract organic results
-  const results = await _page.evaluate(() => {
-    const items = [];
-    // DDG selector for result titles and links - trying multiple patterns
-    const links = document.querySelectorAll('a[data-testid="result-title-a"], h2 a, .result__a');
-    
-    for (const a of links) {
-      const href = a.href;
-      if (!href || href.includes('duckduckgo.com')) continue;
-      
-      // Get text from the link or a nested title element
-      const titleText = (a.querySelector('span') || a).innerText.trim();
-      if (!titleText) continue;
-
-      // Snippets
-      let snippet = '';
-      const container = a.closest('[data-testid="result"]') || a.closest('article') || a.closest('.result');
-      if (container) {
-        const snippetEl = container.querySelector('[data-testid="result-snippet"], .result__snippet, .OgUvY6nI90Y96p65pY_j');
-        snippet = snippetEl?.innerText.trim() || '';
-      }
-
-      items.push({ url: href, title: titleText, description: snippet });
-    }
-    return items;
-  });
-
-  return { web: { results: results.slice(0, count) } };
+  
+  const result = await scrapeCareerSitesWithScrapling([{ name: 'fallback', url }]);
+  const page = result.results?.[0] || {};
+  if (page.error) throw new Error(page.error);
+  
+  return { web: { results: (page.links || []).map(l => ({ url: l.url, title: l.text || l.title || l.ariaLabel, description: '' })) } };
 }
 
 // ── Unified Search Wrapper (Cascading Fallback) ────────────────────────
 
-async function unifiedSearch(query, engineList = ['google', 'ddg', 'brave']) {
+async function unifiedSearch(query, engineList = ['google', 'ddg', 'brave'], postedWindow = { days: 1 }, options = {}) {
+  const { STEALTH_SEARCH, headed } = options;
   let lastError = null;
-  
+
   for (const engine of engineList) {
     try {
-      if (engine === 'google') {
-        return await googleSearch(query);
-      } else if (engine === 'ddg') {
-        return await ddgSearch(query);
-      } else if (engine === 'brave') {
+      if (engine === 'brave') {
         if (!BRAVE_API_KEY) throw new Error('No BRAVE_API_KEY set');
         return await braveSearch(query);
       }
+
+      if (STEALTH_SEARCH) {
+        try {
+          const result = await runStealthSearch(query, { engine, headed, postedWindow });
+          if (result && result.web && result.web.results && result.web.results.length > 0) {
+            return result;
+          }
+          process.stdout.write(`\n  ⚠  ${engine.toUpperCase()} stealth returned empty. Trying Scrapling fallback... `);
+          return await runScraplingFallback(query, engine);
+        } catch (err) {
+          if (err.code === 'CAPTCHA_DETECTED') {
+            process.stdout.write(`\n  ⚠  ${engine.toUpperCase()} stealth hit CAPTCHA. Trying Scrapling fallback... `);
+            return await runScraplingFallback(query, engine);
+          }
+          throw err;
+        }
+      } else {
+        return await runScraplingFallback(query, engine);
+      }
     } catch (err) {
       const msg = err.message.toLowerCase();
-      const isBlock = msg.includes('captcha') || 
-                      msg.includes('rate limit') ||
-                      msg.includes('robot') ||
-                      msg.includes('blocked') ||
-                      msg.includes('did not load') ||
-                      msg.includes('too many requests') ||
-                      msg.includes('brave_api_key');
-      
+      const isBlock = msg.includes('captcha') ||
+        msg.includes('rate limit') ||
+        msg.includes('robot') ||
+        msg.includes('blocked') ||
+        msg.includes('did not load') ||
+        msg.includes('too many requests') ||
+        msg.includes('brave_api_key');
+
       if (isBlock) {
         process.stdout.write(`\n  ⚠  ${engine.toUpperCase()} blocked/failed. Trying next... `);
         lastError = err;
-        // Small delay before trying next engine to cool down
         await new Promise(r => setTimeout(r, 2000));
         continue;
       }
-      throw err; // Re-throw fatal errors (network crash, etc)
+      throw err;
     }
   }
-  
+
   throw new Error(`All engines failed. Last error: ${lastError?.message}`);
 }
+
 
 // ── Location Filtering ────────────────────────────────────────────────
 
 function isLocationEligible(job, targetLoc = 'india') {
   const text = `${job.title} ${job.location} ${job.url} ${job.description || ''}`.toLowerCase();
-  
+
   // 1. Explicit exclusion list (High priority)
   const negatives = [
-    'us only', 'usa only', 'united states', 'uk only', 'united kingdom', 
+    'us only', 'usa only', 'united states', 'uk only', 'united kingdom',
     'europe only', 'emea', 'americas', 'canada', 'germany', 'france',
     'london', 'new york', 'san francisco', 'north america', 'latam'
   ];
-  
+
   // 2. Explicit inclusion list
   const positives = [
-    'india', 'bangalore', 'bengaluru', 'mumbai', 'delhi', 'hyderabad', 
+    'india', 'bangalore', 'bengaluru', 'mumbai', 'delhi', 'hyderabad',
     'pune', 'chennai', 'gurgaon', 'noida', 'apac', 'global', 'worldwide', 'anywhere'
   ];
 
@@ -1135,13 +1150,14 @@ function extractJobs(searchResult, companyHint, { directSite = false } = {}) {
 
     const cleanTitle = title.replace(/\s*[|\u2013\u2014].*$/, '').trim() || title;
 
-    jobs.push({ 
-      title: cleanTitle, 
-      rawTitle: title, 
-      url, 
-      company, 
-      location: r.location || '', 
-      description: desc 
+    jobs.push({
+      title: cleanTitle,
+      rawTitle: title,
+      url,
+      company,
+      location: r.location || '',
+      description: desc,
+      postedText: [title, desc].join(' ').trim(),
     });
   }
   return jobs;
@@ -1240,24 +1256,28 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 async function main() {
   const args = process.argv.slice(2);
-  const dryRun      = args.includes('--dry-run');
-  const apiOnly     = args.includes('--api-only');
-  const siteOnly    = args.includes('--site-only');
-  const searchOnly  = args.includes('--search-only');
-  const headed      = args.includes('--headed');
-  const ci          = args.indexOf('--company');
-  const qi          = args.indexOf('--query');
-  const li          = args.indexOf('--limit');
-  const ei          = args.indexOf('--engine');
-  const ri          = args.indexOf('--raw-query');
-  const loi         = args.indexOf('--location');
+  const STEALTH_SEARCH = !args.includes('--no-stealth-search');
+  const SEARCH_CONCURRENCY = 4;
+  const dryRun = args.includes('--dry-run');
+  const apiOnly = args.includes('--api-only');
+  const siteOnly = args.includes('--site-only');
+  const searchOnly = args.includes('--search-only');
+  const headed = args.includes('--headed');
+  const ci = args.indexOf('--company');
+  const qi = args.indexOf('--query');
+  const li = args.indexOf('--limit');
+  const ei = args.indexOf('--engine');
+  const ri = args.indexOf('--raw-query');
+  const loi = args.indexOf('--location');
+  const poi = args.indexOf('--posted');
   const applyAssist = args.includes('--apply-assist');
-  const filterCo    = ci !== -1 ? args[ci + 1]?.toLowerCase() : null;
-  const qFilter     = qi !== -1 ? args[qi + 1]?.toLowerCase() : null;
-  const limit       = li !== -1 ? parseInt(args[li + 1]) : Infinity;
-  const engineFlag  = ei !== -1 ? args[ei + 1]?.toLowerCase() : null;
-  const rawQuery    = ri !== -1 ? args[ri + 1] : null;
-  const locFilter   = loi !== -1 ? args[loi + 1]?.toLowerCase() : null;
+  const filterCo = ci !== -1 ? args[ci + 1]?.toLowerCase() : null;
+  const qFilter = qi !== -1 ? args[qi + 1]?.toLowerCase() : null;
+  const limit = li !== -1 ? parseInt(args[li + 1]) : Infinity;
+  const engineFlag = ei !== -1 ? args[ei + 1]?.toLowerCase() : null;
+  const rawQuery = ri !== -1 ? args[ri + 1] : null;
+  const locFilter = loi !== -1 ? args[loi + 1]?.toLowerCase() : null;
+  const postedRaw = poi !== -1 ? args[poi + 1] : DEFAULT_POSTED_WINDOW;
   const queryOnlyMode = !!rawQuery;
 
   if (apiOnly && siteOnly) {
@@ -1272,6 +1292,7 @@ async function main() {
 
   const config = yaml.load(readFileSync(PORTALS_PATH, 'utf-8'));
   const profile = loadProfile();
+  const postedWindow = parsePostedWindow(postedRaw);
   const titleFilter = buildTitleFilter(config.title_filter);
   const companies = config.tracked_companies || [];
   const date = new Date().toISOString().slice(0, 10);
@@ -1332,7 +1353,7 @@ async function main() {
   const portalTargets = [];
   const seenPortalUrls = new Set();
   for (const spec of uniqueQueries) {
-    const target = buildPortalSearchTarget(spec);
+    const target = buildPortalSearchTarget(spec, postedWindow);
     if (!target || seenPortalUrls.has(target.url)) continue;
     seenPortalUrls.add(target.url);
     portalTargets.push(target);
@@ -1375,8 +1396,10 @@ async function main() {
         apiStats.found += jobs.length;
 
         for (const job of jobs) {
+          const relevance = classifyJobRelevance(job);
+          if (!relevance.keep) { apiStats.filtered++; continue; }
           if (!titleFilter(job.title)) { apiStats.filtered++; continue; }
-          
+
           if (!isLocationEligible(job, activeLocFilter)) {
             apiStats.locFiltered++;
             continue;
@@ -1664,32 +1687,18 @@ async function main() {
         : engineFlag
           ? [engineFlag]
           : ['google', 'ddg', 'brave'];
-      const needsBrowser = engineList.some(engine => engine === 'google' || engine === 'ddg');
-
-      if (needsBrowser) {
-        process.stdout.write('  Launching browser ... ');
-        try {
-          await initBrowser(headed);
-          console.log('OK');
-        } catch (err) {
-          console.log('FAILED');
-          console.error(`\n  ✗  Could not launch browser: ${err.message}`);
-          console.error('     Run: npx playwright install chromium');
-          process.exit(1);
-        }
-      }
-
-      const searchOffers = [];
-      let queried = 0;
-      const delayMs = needsBrowser ? BROWSER_DELAY_MS : BRAVE_DELAY_MS;
-
-      for (const { name, query, company, allowedHosts } of fallbackQueries.slice(0, limit)) {
+        const searchOffers = [];
+        let queried = 0;
+        
+        const limitFunc = pLimit(SEARCH_CONCURRENCY);
+        const tasks = fallbackQueries.slice(0, limit).map(spec => limitFunc(async () => {
+          const { name, query, company, allowedHosts } = spec;
         queried++;
         process.stdout.write(`  [${queried}/${total}] ${name} ... `);
-        try {
-          const result = await unifiedSearch(query, engineList);
+          try {
+            const result = await unifiedSearch(query, engineList, postedWindow, { STEALTH_SEARCH, headed });
 
-          const jobs = extractJobs(result, company);
+            const jobs = extractJobs(result, company);
           searchStats.found += jobs.length;
           let added = 0;
           for (const job of jobs) {
@@ -1733,15 +1742,12 @@ async function main() {
           if (err.message.includes('All engines failed')) {
             console.log(`\n  ⚠  Critical failure: ${err.message}.`);
             console.log('     Recommendation: Reduce --limit or try again later.');
-            break;
+            return;
           }
         }
-        if (queried < total) await sleep(delayMs);
-      }
-
-      if (needsBrowser) {
-        await closeBrowser();
-      }
+        }));
+        
+        await Promise.all(tasks);
 
       searchStats.queries = queried;
       searchStats.added = searchOffers.length;
