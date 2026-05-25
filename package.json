@@ -18,9 +18,10 @@
     "scan": "node scan.mjs",
     "search-scan": "node search-scan.js",
     "scan:all": "node search-scan.js",
-    "scan:api": "node search-scan.js --api-only",
-    "scan:site": "node search-scan.js --site-only",
-    "scan:search": "node search-scan.js --search-only"
+    "scan:api": "node search-scan.js --phase1",
+    "scan:portals": "node search-scan.js --phase2",
+    "scan:search": "node search-scan.js --phase3",
+    "collect-urls": "node collect-urls.js"
   },
   "keywords": [
     "ai",
@@ -38,6 +39,7 @@
   "license": "MIT",
   "dependencies": {
     "dotenv": "^17.4.2",
+    "googlethis": "^1.8.0",
     "js-yaml": "^4.1.1",
     "playwright": "^1.58.1",
     "playwright-extra": "^4.3.6",
