@@ -392,13 +392,21 @@ async function main() {
 
   // 2. Generate Launcher
   if (args.has('--launch')) {
-    const toLaunch = [...localPassed, ...aiPassed];
+    let toLaunch = [...localPassed, ...aiPassed];
+    let isPendingFallback = false;
+
     if (toLaunch.length === 0) {
-      console.log('No approved [L] or [x] jobs found in pipeline.md to launch.');
-      return;
+      if (pending.length > 0) {
+        toLaunch = [...pending];
+        isPendingFallback = true;
+        console.log('No approved [L] or [x] jobs found. Falling back to pending [ ] jobs.');
+      } else {
+        console.log('No approved [L], [x], or pending [ ] jobs found in pipeline.md to launch.');
+        return;
+      }
+    } else {
+      console.log(`Found ${localPassed.length} [L] jobs and ${aiPassed.length} [x] jobs.`);
     }
-    
-    console.log(`Found ${localPassed.length} [L] jobs and ${aiPassed.length} [x] jobs.`);
     
     const newItems = toLaunch.filter(a => !existingLauncherUrls.some(e => e.url === a.url));
     const passedUrls = [...existingLauncherUrls, ...newItems];
@@ -411,7 +419,11 @@ async function main() {
     
     // Update statuses to [D]
     for (const item of toLaunch) {
-      lines[item.lineIndex] = lines[item.lineIndex].replace(/^- \[[Lx]\]/, '- [D]');
+      if (isPendingFallback) {
+        lines[item.lineIndex] = lines[item.lineIndex].replace(/^- \[ \]/, '- [D]');
+      } else {
+        lines[item.lineIndex] = lines[item.lineIndex].replace(/^- \[[Lx]\]/, '- [D]');
+      }
     }
     
     writeFileSync(PIPELINE_PATH, lines.join('\n'), 'utf-8');
