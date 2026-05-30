@@ -436,6 +436,53 @@ function isLocationEligible(job, targetLoc = 'india') {
   return true;
 }
 
+// ── Location extraction from titles ───────────────────────────────────
+
+function extractLocationFromTitle(title = '') {
+  // Try to extract location from patterns like:
+  //   "Senior Backend Engineer - Remote, India"
+  //   "Software Engineer | Bangalore"
+  //   "Go Developer @ Remote"
+  //   "SDE II (Remote - India)"
+  const locationKeywords = [
+    'remote', 'india', 'apac', 'global', 'worldwide', 'anywhere',
+    'bangalore', 'bengaluru', 'mumbai', 'delhi', 'new delhi',
+    'hyderabad', 'pune', 'chennai', 'gurgaon', 'noida',
+    'ahmedabad', 'surat', 'vadodara', 'gujarat',
+    'indore', 'bhopal', 'madhya pradesh',
+    'nagpur', 'jaipur', 'rajasthan',
+    'kolkata', 'kochi', 'thiruvananthapuram',
+    'europe', 'emea', 'spain', 'germany', 'france', 'uk',
+    'us', 'usa', 'united states', 'canada',
+    'singapore', 'japan', 'australia',
+  ];
+
+  // Try splitting on common delimiters: ' - ', ' | ', ' @ ', ' — ', ' – '
+  const delimiters = [/ [\-\|@\u2013\u2014] /g];
+  let parts = [title];
+  for (const d of delimiters) {
+    const newParts = [];
+    for (const p of parts) newParts.push(...p.split(d));
+    parts = newParts;
+  }
+
+  // Also check parenthesized content: "SDE II (Remote - India)"
+  const parenMatch = title.match(/\(([^)]+)\)/);
+  if (parenMatch) parts.push(parenMatch[1]);
+
+  // Find parts that look like locations
+  for (const part of parts.reverse()) {
+    const lower = part.trim().toLowerCase();
+    if (locationKeywords.some(kw => lower.includes(kw))) {
+      // Don't return parts that look like job titles
+      if (/engineer|developer|manager|lead|senior|junior|intern|architect/i.test(part)) continue;
+      return part.trim();
+    }
+  }
+
+  return '';
+}
+
 // ── Extract jobs from scraped results ──────────────────────────────────
 
 function extractJobsFromScrape(searchResult, companyHint) {
@@ -849,13 +896,17 @@ async function main() {
     console.log(`Scanning ${apiTargets.length} companies via API (${apiStats.skipped} without API)\n`);
 
     const apiOffers = [];
+    let apiProgress = 0;
     const tasks = apiTargets.map(company => async () => {
       const { type, url } = company._api;
+      apiProgress++;
+      process.stdout.write(`  [${apiProgress}/${apiTargets.length}] ${company.name} (${type}) → ${url.substring(0, 80)}${url.length > 80 ? '...' : ''} ... `);
       try {
         const json = await fetchJson(url);
         const jobs = API_PARSERS[type](json, company.name);
         apiStats.found += jobs.length;
 
+        let companyAdded = 0;
         for (const job of jobs) {
           if (!titleFilter(job.title)) { apiStats.filtered++; continue; }
 
@@ -870,8 +921,11 @@ async function main() {
           seenUrls.add(job.url);
           seenCompanyRoles.add(key);
           apiOffers.push({ ...job, source: `${type}-api` });
+          companyAdded++;
         }
+        console.log(`${jobs.length} jobs, ${companyAdded} new`);
       } catch (err) {
+        console.log(`ERROR: ${err.message}`);
         allErrors.push({ name: company.name, phase: 'Phase 1', error: err.message });
       }
     });
@@ -929,7 +983,8 @@ async function main() {
         const siteOffers = [];
         for (const page of siteBatch.results || []) {
           siteStats.scanned++;
-          process.stdout.write(`  [${siteStats.scanned}/${websiteTargets.length}] ${page.name} ... `);
+          const targetUrl = websiteTargets[siteStats.scanned - 1]?.careers_url || '';
+          process.stdout.write(`  [${siteStats.scanned}/${websiteTargets.length}] ${page.name} → ${targetUrl.substring(0, 70)}${targetUrl.length > 70 ? '...' : ''} ... `);
 
           if (page.error) {
             siteStats.failed++;
@@ -1047,7 +1102,9 @@ async function main() {
 
           for (const res of stealthBatch.results || []) {
             searchStats.queries++;
-            process.stdout.write(`  [${searchStats.queries}/${total}] ${res.queryName} ... `);
+            const matchQuery = queries.find(q => q.name === res.queryName);
+            const queryStr = matchQuery ? ` "${matchQuery.query.substring(0, 60)}${matchQuery.query.length > 60 ? '...' : ''}"` : '';
+            process.stdout.write(`  [${searchStats.queries}/${total}] ${res.queryName}${queryStr} (stealth) ... `);
 
             if (res.error) {
               searchStats.errors++;
@@ -1093,7 +1150,8 @@ async function main() {
         let queried = 0;
         for (const q of queries) {
           queried++;
-          process.stdout.write(`  [${queried}/${total}] ${q.name} ... `);
+          const engineLabel = engines.filter(e => e !== 'google').join('/');
+          process.stdout.write(`  [${queried}/${total}] ${q.name} "${q.query.substring(0, 60)}${q.query.length > 60 ? '...' : ''}" (${engineLabel}) ... `);
 
           try {
             const results = await searchEngine(q.query, numResults, engines.filter(e => e !== 'google'));
@@ -1154,12 +1212,13 @@ async function main() {
 
         seenUrls.add(entry.url);
         seenCompanyRoles.add(key);
+        const extractedLocation = extractLocationFromTitle(entry.title);
         searchOffers.push({
           title: cleanTitle,
           rawTitle: entry.title,
           url: entry.url,
           company,
-          location: '',
+          location: extractedLocation,
           source: 'search-query',
         });
       }

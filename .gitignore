@@ -44,3 +44,6 @@ __pycache__/
 career-dashboard
 package-lock.json
 .aider*
+
+.env
+data/search-urls.tsv

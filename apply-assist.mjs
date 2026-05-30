@@ -50,6 +50,35 @@ function ensureDir(path) {
   mkdirSync(path, { recursive: true });
 }
 
+// ── Pipeline line parser ─────────────────────────────────────────────────
+
+/**
+ * Parse the trailing portion of a pipeline line after the URL.
+ * Format: " | company | title" or " | company | title | location"
+ * Returns { title, location } where title includes company prefix for display.
+ */
+function parsePipelineFields(trailingText) {
+  const raw = (trailingText || '').trim();
+  // Split on ' | ' to get fields: [company, title, location?]
+  const parts = raw.split(/\s*\|\s*/).filter(Boolean);
+  
+  if (parts.length >= 3) {
+    // Has company, title, and location
+    const company = parts[0].trim();
+    const title = parts[1].trim();
+    const location = parts.slice(2).join(' | ').trim();
+    return { title: `${company} | ${title}`, location };
+  } else if (parts.length === 2) {
+    // Has company and title, no location
+    const company = parts[0].trim();
+    const title = parts[1].trim();
+    return { title: `${company} | ${title}`, location: '' };
+  } else {
+    // Fallback: treat entire text as title
+    return { title: raw, location: '' };
+  }
+}
+
 // ── Search URLs Evaluation & Launcher Generation ─────────────────────────
 
 function evaluateJobTitle(title, criteria) {
@@ -160,6 +189,8 @@ function generateLauncherHtml(passedUrls) {
     .links-list li:last-child { margin-bottom: 0; padding-bottom: 0; border-bottom: none; }
     .links-list a { color: #0366d6; text-decoration: none; font-weight: 500; }
     .links-list a:hover { text-decoration: underline; }
+    .location { display: inline-block; font-size: 12px; color: #586069; background: #f1f3f5; border-radius: 12px; padding: 2px 10px; margin-left: 8px; vertical-align: middle; }
+    .location::before { content: '📍 '; }
     .controls { margin-bottom: 20px; display: flex; align-items: center; flex-wrap: wrap; }
   </style>
 </head>
@@ -192,7 +223,8 @@ function generateLauncherHtml(passedUrls) {
     
     batch.forEach((u, i) => {
       const globalIdx = startIdx + i;
-      html += `        <li><a href="${u.url}" target="_blank" rel="noopener noreferrer">${globalIdx}. ${u.title || u.url}</a></li>\n`;
+      const locBadge = u.location ? ` <span class="location">${u.location}</span>` : '';
+      html += `        <li><a href="${u.url}" target="_blank" rel="noopener noreferrer">${globalIdx}. ${u.title || u.url}</a>${locBadge}</li>\n`;
     });
     
     html += `      </ul>
@@ -333,24 +365,28 @@ async function main() {
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
     
+    // Parse pipeline format: - [X] URL | company | title | location
     // - [ ]
     let m = line.match(/^- \[ \] (https?:\/\/\S+)(.*)/);
     if (m) {
-      pending.push({ url: m[1], lineIndex: i, title: m[2] });
+      const { title, location } = parsePipelineFields(m[2]);
+      pending.push({ url: m[1], lineIndex: i, title, location });
       continue;
     }
     
     // - [L]
     m = line.match(/^- \[L\] (https?:\/\/\S+)(.*)/);
     if (m) {
-      localPassed.push({ url: m[1], lineIndex: i, title: m[2] });
+      const { title, location } = parsePipelineFields(m[2]);
+      localPassed.push({ url: m[1], lineIndex: i, title, location });
       continue;
     }
     
     // - [x]
     m = line.match(/^- \[x\] (https?:\/\/\S+)(.*)/);
     if (m) {
-      aiPassed.push({ url: m[1], lineIndex: i, title: m[2] });
+      const { title, location } = parsePipelineFields(m[2]);
+      aiPassed.push({ url: m[1], lineIndex: i, title, location });
       continue;
     }
   }
@@ -361,10 +397,10 @@ async function main() {
   
   if (existsSync(launcherPath)) {
     const oldHtml = readFileSync(launcherPath, 'utf-8');
-    const aTagRegex = /<a href="(.*?)"[^>]*>\d+\.\s*(.*?)<\/a>/g;
+    const aTagRegex = /<li><a href="(.*?)"[^>]*>\d+\.\s*(.*?)<\/a>(?:\s*<span class="location">(.*?)<\/span>)?<\/li>/g;
     let m;
     while ((m = aTagRegex.exec(oldHtml)) !== null) {
-      existingLauncherUrls.push({ url: m[1], title: m[2] });
+      existingLauncherUrls.push({ url: m[1], title: m[2], location: m[3] || '' });
     }
   }
 
