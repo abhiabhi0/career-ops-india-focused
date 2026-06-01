@@ -52,6 +52,7 @@ const SEARCH_DELAY_MS  = 3500;  // respectful delay between search queries
 const DEFAULT_NUM      = 10;
 const SCRAPLING_SCRIPT  = resolve(ROOT_DIR, 'scripts/scrapling-site-scrape.py');
 const STEALTH_SEARCH_SCRIPT = resolve(ROOT_DIR, 'scripts/stealth-search.py');
+const OPENJOBDATA_SCRIPT = resolve(ROOT_DIR, 'scripts/openjobdata-scan.py');
 const SCRAPLING_PYTHON  = resolve(ROOT_DIR, '.venv-scrapling/bin/python');
 
 const PROFILE_PATH = 'config/profile.yml';
@@ -88,7 +89,11 @@ function runProcess(command, args, { input, env = {} } = {}) {
     let stderr = '';
 
     child.stdout.on('data', chunk => { stdout += chunk.toString(); });
-    child.stderr.on('data', chunk => { stderr += chunk.toString(); });
+    child.stderr.on('data', chunk => {
+      const str = chunk.toString();
+      stderr += str;
+      process.stderr.write(str);
+    });
     child.on('error', rejectPromise);
     child.on('close', code => resolvePromise({ code, stdout, stderr }));
 
@@ -180,6 +185,31 @@ async function searchGoogleStealthy(queries, num = 10, headed = false) {
     return JSON.parse(stdout || '{"results":[]}');
   } catch (err) {
     throw new Error(`Could not parse stealth-search JSON output: ${err.message}`);
+  }
+}
+
+async function runOpenJobDataScan(positives, negatives, targetLocation, days = 3) {
+  if (!existsSync(OPENJOBDATA_SCRIPT)) {
+    throw new Error(`Missing helper script: ${OPENJOBDATA_SCRIPT}`);
+  }
+
+  const python = detectScraplingPython();
+  const payload = JSON.stringify({ positives, negatives, target_location: targetLocation, days });
+  const args = [OPENJOBDATA_SCRIPT];
+
+  const { code, stdout, stderr } = await runProcess(python, args, {
+    input: payload,
+  });
+
+  if (code !== 0) {
+    const message = stderr.trim() || stdout.trim() || `OpenJobData helper exited with code ${code}`;
+    throw new Error(message);
+  }
+
+  try {
+    return JSON.parse(stdout || '{"results":[]}');
+  } catch (err) {
+    throw new Error(`Could not parse OpenJobData JSON output: ${err.message}`);
   }
 }
 
@@ -817,35 +847,40 @@ async function main() {
   const ei          = args.indexOf('--engine');
   const ni          = args.indexOf('--num');
   const loi         = args.indexOf('--location');
+  const di          = args.indexOf('--days');
   const filterCo    = ci !== -1 ? args[ci + 1]?.toLowerCase() : null;
   const qFilter     = qi !== -1 ? args[qi + 1]?.toLowerCase() : null;
   const limit       = li !== -1 ? parseInt(args[li + 1]) : Infinity;
   const engineFlag  = ei !== -1 ? args[ei + 1]?.toLowerCase() : null;
   const numResults  = ni !== -1 ? parseInt(args[ni + 1]) : DEFAULT_NUM;
   const locFilter   = loi !== -1 ? args[loi + 1]?.toLowerCase() : null;
+  const scanDays    = di !== -1 ? parseInt(args[di + 1]) : 3;
 
-  // Phase selection: --phase1, --phase2, --phase3
-  // Also support legacy flags: --api-only, --site-only, --search-only
-  const hasPhaseFlag = args.includes('--phase1') || args.includes('--phase2') || args.includes('--phase3');
-  const hasLegacyFlag = args.includes('--api-only') || args.includes('--site-only') || args.includes('--search-only');
+  // Phase selection: --phase1, --phase2, --phase3, --phase4
+  // Also support legacy flags: --api-only, --site-only, --search-only, --ojd-only
+  const hasPhaseFlag = args.includes('--phase1') || args.includes('--phase2') || args.includes('--phase3') || args.includes('--phase4');
+  const hasLegacyFlag = args.includes('--api-only') || args.includes('--site-only') || args.includes('--search-only') || args.includes('--ojd-only');
 
-  let runPhase1, runPhase2, runPhase3;
+  let runPhase1, runPhase2, runPhase3, runPhase4;
 
   if (hasPhaseFlag) {
     // Explicit phase selection — run only specified phases
     runPhase1 = args.includes('--phase1');
     runPhase2 = args.includes('--phase2');
     runPhase3 = args.includes('--phase3');
+    runPhase4 = args.includes('--phase4');
   } else if (hasLegacyFlag) {
     // Legacy flags
     runPhase1 = args.includes('--api-only');
     runPhase2 = args.includes('--site-only');
     runPhase3 = args.includes('--search-only');
+    runPhase4 = args.includes('--ojd-only');
   } else {
     // No flags → run all phases
     runPhase1 = true;
     runPhase2 = true;
     runPhase3 = true;
+    runPhase4 = true;
   }
 
   if (!existsSync(PORTALS_PATH)) {
@@ -874,6 +909,7 @@ async function main() {
   if (runPhase1) phaseLabels.push('Phase 1 (API)');
   if (runPhase2) phaseLabels.push('Phase 2 (Portals)');
   if (runPhase3) phaseLabels.push('Phase 3 (Search)');
+  if (runPhase4) phaseLabels.push('Phase 4 (OpenJobData)');
   console.log(`\n  Running: ${phaseLabels.join(' + ')}\n`);
 
   // ── Phase 1: Direct API scan ────────────────────────────────────────
@@ -1229,6 +1265,90 @@ async function main() {
     }
   }
 
+  // ── Phase 4: Open Job Data scan ──────────────────────────────────────
+
+  let ojdStats = { found: 0, filtered: 0, locFiltered: 0, dupes: 0, added: 0 };
+
+  if (runPhase4) {
+    console.log(`\n${'━'.repeat(60)}`);
+    console.log(`Phase 4 — Open Job Data Scan (Hugging Face Bucket)`);
+    console.log(`${'━'.repeat(60)}`);
+    console.log(`  Scanning last ${scanDays} days of daily changes...\n`);
+
+    process.stdout.write('  Running Open Job Data collector ... ');
+    try {
+      const positives = config.title_filter?.positive || [];
+      const negatives = config.title_filter?.negative || [];
+      const ojdBatch = await runOpenJobDataScan(positives, negatives, activeLocFilter, scanDays);
+      console.log('OK\n');
+
+      const ojdOffers = [];
+      const rawJobs = ojdBatch.results || [];
+      ojdStats.found = rawJobs.length;
+
+      for (const job of rawJobs) {
+        if (!titleFilter(job.title)) {
+          ojdStats.filtered++;
+          continue;
+        }
+
+        const cleanJob = {
+          title: job.title,
+          location: job.location || '',
+          url: job.url || '',
+          description: ''
+        };
+
+        if (!isLocationEligible(cleanJob, activeLocFilter)) {
+          ojdStats.locFiltered++;
+          continue;
+        }
+
+        if (seenUrls.has(job.url)) {
+          ojdStats.dupes++;
+          continue;
+        }
+
+        const key = `${job.company.toLowerCase()}::${job.title.toLowerCase()}`;
+        if (seenCompanyRoles.has(key)) {
+          ojdStats.dupes++;
+          continue;
+        }
+
+        seenUrls.add(job.url);
+        seenCompanyRoles.add(key);
+
+        ojdOffers.push({
+          title: job.title,
+          url: job.url,
+          company: job.company,
+          location: job.location,
+          source: 'openjobdata'
+        });
+      }
+
+      ojdStats.added = ojdOffers.length;
+      allNewOffers.push(...ojdOffers);
+
+      console.log(`  Total jobs found  : ${ojdStats.found}`);
+      console.log(`  Filtered by title : ${ojdStats.filtered} removed`);
+      console.log(`  Filtered by loc   : ${ojdStats.locFiltered} removed`);
+      console.log(`  Duplicates        : ${ojdStats.dupes} skipped`);
+      console.log(`  New offers        : ${ojdStats.added}`);
+
+      if (ojdOffers.length > 0) {
+        console.log('\n  New from Open Job Data:');
+        for (const o of ojdOffers) {
+          console.log(`    + ${o.company} | ${o.title} | ${o.location || 'N/A'}`);
+        }
+      }
+    } catch (err) {
+      console.log('FAILED');
+      allErrors.push({ name: 'openjobdata', phase: 'Phase 4', error: err.message });
+      console.log(`  Open Job Data scan failed: ${err.message}`);
+    }
+  }
+
   // ── Write results ───────────────────────────────────────────────────
 
   if (!dryRun && allNewOffers.length > 0) {
@@ -1289,6 +1409,15 @@ async function main() {
     if (!dryRun && searchStats.uniqueUrls > 0) {
       console.log(`    Raw URLs saved to  : data/search-urls.tsv`);
     }
+  }
+
+  if (runPhase4) {
+    console.log(`\n  Phase 4 — Open Job Data:`);
+    console.log(`    Total jobs found   : ${ojdStats.found}`);
+    console.log(`    Filtered by title  : ${ojdStats.filtered}`);
+    console.log(`    Filtered by loc    : ${ojdStats.locFiltered}`);
+    console.log(`    Duplicates skipped : ${ojdStats.dupes}`);
+    console.log(`    New offers added   : ${ojdStats.added}`);
   }
 
   if (allErrors.length > 0) {

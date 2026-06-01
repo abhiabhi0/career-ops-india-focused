@@ -110,7 +110,8 @@ node search-scan.js --phase3
 - `node search-scan.js --phase1` : Scans standard ATS APIs (Lever, Greenhouse, etc).
 - `node search-scan.js --phase2` : Scrapes direct job portals using Scrapling.
 - `node search-scan.js --phase3` : Performs fallback web searches (Serper/DuckDuckGo).
-- `npm run scan:all` : Runs all configured scanners.
+- `node search-scan.js --phase4` : Scans daily changes parquet files from the Open Job Data bucket.
+- `npm run scan:all` : Runs all configured scanners (API, Portals, Search, Open Job Data).
 
 ### Evaluation Commands
 - `node apply-assist.mjs --filter-local` : Evaluates `[ ]` pending jobs locally using keyword matching. Updates state to `[L]` (pass) or `[-]` (fail).

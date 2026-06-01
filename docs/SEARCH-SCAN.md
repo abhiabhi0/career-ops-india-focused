@@ -1,6 +1,6 @@
 # search-scan.js — Unified Job Scanner
 
-A three-phase job scanner that combines **API scanning**, **career page scraping**, and **search engine URL collection** to discover jobs.
+A four-phase job scanner that combines **API scanning**, **career page scraping**, **search engine URL collection**, and **public datasets** to discover jobs.
 
 ## Architecture
 
@@ -15,9 +15,13 @@ portals.yml
     │   (Scrapling on career page URLs)
     │   Scrolls pages, clicks "Load More", extracts job links
     │
-    └── search_queries ─────► Phase 3: Search Queries
-        (Google → DuckDuckGo via Playwright)
-        Collects all result URLs per query
+    ├── search_queries ─────► Phase 3: Search Queries
+    │   (Google → DuckDuckGo via Playwright)
+    │   Collects all result URLs per query
+    │
+    └── Open Job Data ──────► Phase 4: Dataset Scan
+        (Hugging Face Bucket changes Parquet)
+        Reads daily changes delta files, resolves companies
                 │
                 ▼
         dedup + title filter
@@ -31,16 +35,17 @@ portals.yml
 ## Quick Start
 
 ```bash
-# Full scan (all 3 phases)
+# Full scan (all 4 phases)
 node search-scan.js
 
 # Run individual phases
 node search-scan.js --phase1          # API only
 node search-scan.js --phase2          # Scrapling portals only
 node search-scan.js --phase3          # Search queries only
+node search-scan.js --phase4          # Open Job Data only
 
 # Combine specific phases
-node search-scan.js --phase1 --phase3
+node search-scan.js --phase1 --phase4
 
 # Preview without writing files
 node search-scan.js --dry-run
@@ -70,6 +75,8 @@ Override with `SCRAPLING_PYTHON=/path/to/python` if your venv lives elsewhere.
 | `--phase1` | Run Phase 1 only (API scan) |
 | `--phase2` | Run Phase 2 only (Scrapling portal scrape) |
 | `--phase3` | Run Phase 3 only (search query URL collection) |
+| `--phase4` | Run Phase 4 only (Open Job Data dataset scan) |
+| `--days N` | Number of days of daily changes to scan in Phase 4 (default: 3) |
 | `--company NAME` | Filter companies by name (Phase 1 + 2) |
 | `--query KEYWORD` | Filter search queries by keyword (Phase 3) |
 | `--limit N` | Limit Phase 3 to N queries |
@@ -80,7 +87,7 @@ Override with `SCRAPLING_PYTHON=/path/to/python` if your venv lives elsewhere.
 | `--location LOC` | Override location filter (default: from profile or "india") |
 | `--apply-assist` | Prepare application artifacts after scanning |
 
-Legacy flags `--api-only`, `--site-only`, `--search-only` still work as aliases for `--phase1`, `--phase2`, `--phase3`.
+Legacy flags `--api-only`, `--site-only`, `--search-only`, `--ojd-only` still work as aliases for `--phase1`, `--phase2`, `--phase3`, `--phase4`.
 
 ## Phase Details
 
@@ -108,6 +115,15 @@ For each `search_queries` entry in `portals.yml`:
 - Deduplicates across queries
 - Saves raw URLs to `data/search-urls.tsv`
 - Filters job-like URLs into `data/pipeline.md`
+
+### Phase 4 — Open Job Data Scan
+
+Queries the public daily changes feed from Open Job Data's Hugging Face storage bucket (`hf://buckets/Invicto69/Jobs-Dataset-bucket`):
+- Fetches the daily changes parquet files for the last N days (default: 3 days)
+- Resolves company IDs using the `companies.parquet` metadata lookup
+- Filters job listings case-insensitively using the positive and negative keywords defined in `portals.yml`
+- Applies target location checks (matching `is_remote` or the target country)
+- Appends new unique listings to `data/pipeline.md` and `data/scan-history.tsv`
 
 ## Examples
 
@@ -138,6 +154,7 @@ npm run scan:all       # Full scan (all phases)
 npm run scan:api       # Phase 1 only
 npm run scan:portals   # Phase 2 only
 npm run scan:search    # Phase 3 only
+npm run scan:openjobdata # Phase 4 only
 npm run collect-urls   # Standalone URL collector (Phase 3 only, no pipeline write)
 ```
 

@@ -207,15 +207,23 @@ async def main():
 
     async with session_class(**session_kwargs) as session:
         async def worker(index, target):
+            url = target.get("url", "unknown")
+            name = target.get("name") or url
+            sys.stderr.write(f"\n[Scrapling] [{index+1}/{len(targets)}] Starting: {name} ({url})\n")
+            sys.stderr.flush()
             try:
                 results[index] = await scrape_target(session, target, args)
+                sys.stderr.write(f"[Scrapling] [{index+1}/{len(targets)}] Finished: {name}\n")
+                sys.stderr.flush()
             except Exception as exc:
                 results[index] = {
-                    "name": target.get("name") or target.get("url") or "unknown",
-                    "url": target.get("url"),
+                    "name": name,
+                    "url": url,
                     "error": str(exc),
                     "links": [],
                 }
+                sys.stderr.write(f"[Scrapling] [{index+1}/{len(targets)}] Error scraping {name}: {exc}\n")
+                sys.stderr.flush()
 
         await asyncio.gather(*(worker(index, target) for index, target in enumerate(targets)))
 

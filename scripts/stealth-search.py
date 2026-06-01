@@ -127,6 +127,9 @@ async def search_queries(queries, num=10, headed=False, delay_min=3.0, delay_max
 
             search_url = f"{GOOGLE_URL}?q={query_text}&num={num}&hl=en&gl=in"
 
+            sys.stderr.write(f"\n[StealthSearch] [{i+1}/{len(queries)}] Starting: {name} ({query_text})\n")
+            sys.stderr.flush()
+
             try:
                 response = await session.fetch(
                     search_url,
@@ -139,6 +142,8 @@ async def search_queries(queries, num=10, headed=False, delay_min=3.0, delay_max
                 page_text = response.get_all_text(separator=" ", strip=True).lower()
                 if "captcha" in page_text or "unusual traffic" in page_text or "robot" in page_text[:500]:
                     results.append({"queryName": name, "urls": [], "error": "CAPTCHA detected"})
+                    sys.stderr.write(f"[StealthSearch] [{i+1}/{len(queries)}] Error: CAPTCHA detected\n")
+                    sys.stderr.flush()
                     # If CAPTCHA'd, stop — further queries will likely also fail
                     for remaining in queries[i + 1:]:
                         results.append({
@@ -150,10 +155,14 @@ async def search_queries(queries, num=10, headed=False, delay_min=3.0, delay_max
 
                 urls = extract_search_results(response, num)
                 results.append({"queryName": name, "urls": urls, "error": None})
+                sys.stderr.write(f"[StealthSearch] [{i+1}/{len(queries)}] Finished: Found {len(urls)} URLs\n")
+                sys.stderr.flush()
 
             except Exception as exc:
                 error_msg = str(exc)
                 results.append({"queryName": name, "urls": [], "error": error_msg})
+                sys.stderr.write(f"[StealthSearch] [{i+1}/{len(queries)}] Error: {error_msg}\n")
+                sys.stderr.flush()
 
                 # If it looks like a block, stop early
                 lower_err = error_msg.lower()

@@ -1,6 +1,7 @@
 {
   "name": "career-ops",
   "version": "1.0.0",
+  "type": "module",
   "description": "AI-powered job search pipeline built on Claude Code",
   "scripts": {
     "doctor": "node doctor.mjs",
@@ -21,6 +22,7 @@
     "scan:api": "node search-scan.js --phase1",
     "scan:portals": "node search-scan.js --phase2",
     "scan:search": "node search-scan.js --phase3",
+    "scan:openjobdata": "node search-scan.js --phase4",
     "collect-urls": "node collect-urls.js"
   },
   "keywords": [
