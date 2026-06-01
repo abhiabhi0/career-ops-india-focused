@@ -69,3 +69,31 @@ location:
   visa_status: "No sponsorship needed"
   # For remote roles outside your country:
   # onsite_availability: "1 week/month in any city"
+
+# Job Scanner Criteria
+# These criteria are used by the search-scan and apply-assist scripts to filter job listings.
+job_criteria:
+  allowed_titles:
+    - "ai engineer"
+    - "ml engineer"
+    - "machine learning"
+    - "backend"
+    - "software engineer"
+  required_skills:
+    - "python"
+    - "pytorch"
+  experience:
+    min_years: 3
+    max_years: 8
+  allowed_locations:
+    - "remote"
+    - "san francisco"
+    - "united states"
+    - "us"
+    - "anywhere"
+  blocked_phrases:
+    - "frontend developer"
+    - "react designer"
+    - "salesforce developer"
+    - "sap consultant"
+

@@ -1,8 +1,8 @@
-# Career-Ops India (Free-Tier Agents)
+# Career-Ops (Free-Tier Agents)
 
-This repository is copied from [santifer/career-ops](https://github.com/santifer/career-ops) and modified to work with free-tier AI coding agents for candidates residing in India.
+This repository is copied from [santifer/career-ops](https://github.com/santifer/career-ops) and modified to work with free-tier AI coding agents.
 
-Primary goal: Automate discovering, filtering, and applying to remote jobs worldwide that explicitly allow India-resident applicants.
+Primary goal: Automate discovering, filtering, and applying to remote jobs worldwide, fully configurable for any role/location via `config/profile.yml`.
 
 ## 🤖 Any AI Agent Supported
 This framework is built around standard markdown files (`pipeline.md`), which means it works perfectly with **any** AI coding agent, including:
@@ -14,6 +14,9 @@ This framework is built around standard markdown files (`pipeline.md`), which me
 ---
 
 ## 🛠️ One-Time Setup
+
+> [!TIP]
+> For a detailed walkthrough of all installation steps, environment variables (such as the Serper API key), and verification checks, refer to the [Complete Setup & Configuration Guide](docs/SETUP.md).
 
 1. **Install Node dependencies & Playwright:**
    ```bash
@@ -32,7 +35,18 @@ This framework is built around standard markdown files (`pipeline.md`), which me
    cp config/profile.example.yml config/profile.yml
    cp templates/portals.example.yml portals.yml
    ```
-   *CRITICAL: Edit `config/profile.yml` to set your target job titles, keywords, location, and salary expectations. Both the AI and the local keyword scanner rely entirely on this file!*
+   *CRITICAL: Edit `config/profile.yml` to set your target job titles, keywords, location, and salary expectations. This is the **single source of truth** for all scanner phases!*
+
+4. **Personalize your search (edit `config/profile.yml`):**
+
+   | Section | What it controls |
+   | :--- | :--- |
+   | `target_roles.primary` | Role names used in search queries (`{roles}` placeholder) |
+   | `job_criteria.required_skills` | Technical skill keywords (`{skills}` placeholder) |
+   | `job_criteria.allowed_titles` | Positive title filter keywords |
+   | `job_criteria.allowed_locations` | Location filter keywords (`{locations}` placeholder) |
+   | `job_criteria.blocked_phrases` | Negative filter keywords (roles to skip) |
+   | `location.country` | Default country filter |
 
 ---
 
@@ -120,9 +134,10 @@ node search-scan.js --phase3
 ### Launcher Commands
 - `node apply-assist.mjs --launch` : Collects all `[L]` and `[x]` jobs, adds them to `launcher-<date>.html` in batches of 10, and updates their state to `[D]` (Done).
 
-## 📍 Strict India-Remote Filtering
+## 📍 Profile-Driven Location Filtering
 
 The system is fully autonomous regarding location.
-1. **Auto-Profile Reading**: The scanner automatically reads your `location.country` from `config/profile.yml`.
-2. **Strict Filtering**: It excludes "US Only" or "Europe Only" roles, even if labeled "Remote".
-3. **Targeted Search**: It only keeps roles that are explicitly open to India-resident candidates (Remote-India, APAC, or Global Remote).
+1. **Auto-Profile Reading**: The scanner automatically reads your `location.country` and `job_criteria.allowed_locations` from `config/profile.yml`.
+2. **Strict Filtering**: It excludes roles restricted to locations not in your allowed list, even if labeled "Remote".
+3. **Targeted Search**: It only keeps roles matching your configured locations (e.g., Remote, APAC, specific cities).
+4. **Template Expansion**: Search queries in `portals.yml` can use `{locations}` placeholders that expand to your profile's location list.

@@ -69,6 +69,76 @@ function loadProfile() {
   }
 }
 
+/**
+ * Build unified filter settings by merging profile.yml (single source of truth)
+ * with portals.yml defaults. Profile values take precedence and extend the
+ * portal defaults.
+ */
+function buildProfileFilters(profile, portalConfig) {
+  const criteria = profile?.job_criteria || {};
+  const roles    = profile?.target_roles?.primary || [];
+
+  // ── Title filter positive/negative ──────────────────────────────────
+  // Start with portals.yml defaults, then merge profile overrides
+  const portalPos = (portalConfig?.title_filter?.positive || []).map(k => k.toLowerCase());
+  const portalNeg = (portalConfig?.title_filter?.negative || []).map(k => k.toLowerCase());
+
+  const profilePos = (criteria.allowed_titles || []).map(k => k.toLowerCase());
+  const profileNeg = (criteria.blocked_phrases || []).map(k => k.toLowerCase());
+
+  // Merge: profile extends portals, dedup
+  const titlePositive = [...new Set([...portalPos, ...profilePos])];
+  const titleNegative = [...new Set([...portalNeg, ...profileNeg])];
+
+  // ── Location keywords (from profile) ────────────────────────────────
+  const profileLocations = (criteria.allowed_locations || []).map(k => k.toLowerCase());
+
+  // ── Role labels (for search query interpolation) ────────────────────
+  const roleLabels = roles.map(r => r.replace(/\s*\([^)]*\)\s*/g, '').trim()).filter(Boolean);
+
+  // ── Skills (for search query interpolation) ─────────────────────────
+  const skills = (criteria.required_skills || []).map(s => s.toLowerCase());
+
+  return {
+    titlePositive,
+    titleNegative,
+    locations: profileLocations,
+    roleLabels,
+    skills,
+    country: profile?.location?.country || 'India',
+  };
+}
+
+/**
+ * Interpolate template placeholders in search query strings.
+ *
+ * Supported placeholders:
+ *   {roles}          → OR-list of target_roles.primary (quoted)
+ *   {skills}         → OR-list of required_skills (quoted)
+ *   {locations}      → OR-list of allowed_locations (quoted)
+ *   {skills_or_roles} → union of roles + skills (quoted)
+ */
+function interpolateQuery(queryStr, filters) {
+  if (!queryStr) return queryStr;
+  if (!queryStr.includes('{')) return queryStr; // fast path — no placeholders
+
+  const quote = list => list.map(s => `"${s}"`).join(' OR ');
+  const wrap  = list => list.length > 1 ? `(${quote(list)})` : quote(list);
+
+  const replacements = {
+    '{roles}':          wrap(filters.roleLabels.length ? filters.roleLabels : ['Software Engineer']),
+    '{skills}':         wrap(filters.skills.length ? filters.skills : ['backend']),
+    '{locations}':      wrap(filters.locations.length ? filters.locations : ['remote']),
+    '{skills_or_roles}': wrap([...new Set([...filters.roleLabels, ...filters.skills])].filter(Boolean) || ['Software Engineer']),
+  };
+
+  let result = queryStr;
+  for (const [placeholder, value] of Object.entries(replacements)) {
+    result = result.replaceAll(placeholder, value);
+  }
+  return result;
+}
+
 // ── Process helpers ────────────────────────────────────────────────────
 
 function detectScraplingPython() {
@@ -341,12 +411,14 @@ const GENERIC_JOB_PATH_HINTS = [
   '/requisition/', '/requisitions/',
 ];
 
-const GENERIC_TITLE_HINTS = [
+// Default title hints — will be extended at runtime by profile.job_criteria.allowed_titles
+let GENERIC_TITLE_HINTS = [
   'engineer', 'developer', 'backend', 'platform', 'software',
   'golang', 'devops', 'sre', 'staff', 'principal', 'lead',
 ];
 
-const LOCATION_HINTS = [
+// Default location hints — will be replaced at runtime by profile.job_criteria.allowed_locations
+let LOCATION_HINTS = [
   'remote', 'india', 'apac', 'global', 'worldwide',
   'bangalore', 'bengaluru', 'mumbai', 'delhi', 'new delhi',
   'hyderabad', 'pune', 'chennai', 'gurgaon', 'noida',
@@ -356,7 +428,8 @@ const LOCATION_HINTS = [
   'spain', 'europe', 'emea',
 ];
 
-const IRRELEVANT_TITLE_PHRASES = [
+// Default irrelevant phrases — will be extended at runtime by profile.job_criteria.blocked_phrases
+let IRRELEVANT_TITLE_PHRASES = [
   'repair engineer', 'structural design engineer', 'labware lims',
   'salesforce', 'sap btp', 'fullstack', 'full stack', 'frontend',
   'android', 'ios', 'qa engineer', 'manual test',
@@ -402,6 +475,13 @@ function isLikelyJobUrl(url, title = '', allowTitleOnly = false) {
   }
 }
 
+// Default positive signals — will be replaced at runtime by profile-derived values
+let RELEVANCE_POSITIVE_SIGNALS = [
+  'golang', 'go engineer', 'go developer', 'backend',
+  'site reliability', 'sre', 'platform engineer', 'devops',
+  'distributed systems', 'microservices',
+];
+
 function classifyJobRelevance(job = {}) {
   const title = (job.title || job.rawTitle || '').toLowerCase();
   const url = (job.url || '').toLowerCase();
@@ -417,14 +497,8 @@ function classifyJobRelevance(job = {}) {
     return { keep: false, reason: 'irrelevant_title' };
   }
 
-  const positiveSignals = [
-    'golang', 'go engineer', 'go developer', 'backend',
-    'site reliability', 'sre', 'platform engineer', 'devops',
-    'distributed systems', 'microservices',
-  ];
-
   const applySignals = APPLY_HINTS.some(hint => text.includes(hint));
-  const roleSignals = positiveSignals.some(signal => title.includes(signal) || description.includes(signal));
+  const roleSignals = RELEVANCE_POSITIVE_SIGNALS.some(signal => title.includes(signal) || description.includes(signal));
 
   if (!roleSignals) {
     return { keep: false, reason: 'missing_role_signal' };
@@ -439,24 +513,25 @@ function classifyJobRelevance(job = {}) {
 
 // ── Location Filtering ────────────────────────────────────────────────
 
+// Default location filter positives/negatives — will be replaced at runtime by profile-derived values
+let LOCATION_POSITIVES = [
+  'india', 'bangalore', 'bengaluru', 'mumbai', 'delhi', 'hyderabad',
+  'pune', 'chennai', 'gurgaon', 'noida', 'apac', 'global', 'worldwide', 'anywhere'
+];
+
+const LOCATION_NEGATIVES = [
+  'us only', 'usa only', 'united states', 'uk only', 'united kingdom',
+  'europe only', 'emea', 'americas', 'canada', 'germany', 'france',
+  'london', 'new york', 'san francisco', 'north america', 'latam'
+];
+
 function isLocationEligible(job, targetLoc = 'india') {
   const text = `${job.title} ${job.location} ${job.url} ${job.description || ''}`.toLowerCase();
 
-  const negatives = [
-    'us only', 'usa only', 'united states', 'uk only', 'united kingdom',
-    'europe only', 'emea', 'americas', 'canada', 'germany', 'france',
-    'london', 'new york', 'san francisco', 'north america', 'latam'
-  ];
-
-  const positives = [
-    'india', 'bangalore', 'bengaluru', 'mumbai', 'delhi', 'hyderabad',
-    'pune', 'chennai', 'gurgaon', 'noida', 'apac', 'global', 'worldwide', 'anywhere'
-  ];
-
-  const hasPositive = positives.some(p => text.includes(p));
+  const hasPositive = LOCATION_POSITIVES.some(p => text.includes(p));
   if (hasPositive) return true;
 
-  const hasNegative = negatives.some(n => text.includes(n));
+  const hasNegative = LOCATION_NEGATIVES.some(n => text.includes(n));
   if (hasNegative) return false;
 
   if (text.includes('remote') || text.includes('wfh')) return true;
@@ -890,9 +965,37 @@ async function main() {
 
   const config = yaml.load(readFileSync(PORTALS_PATH, 'utf-8'));
   const profile = loadProfile();
-  const titleFilter = buildTitleFilter(config.title_filter);
   const companies = config.tracked_companies || [];
   const date = new Date().toISOString().slice(0, 10);
+
+  // ── Apply profile-driven dynamic filters ──────────────────────────
+  const profileFilters = buildProfileFilters(profile, config);
+
+  // Override mutable filter arrays with profile-derived values
+  if (profileFilters.locations.length) {
+    LOCATION_POSITIVES = [...new Set([...LOCATION_POSITIVES, ...profileFilters.locations])];
+    LOCATION_HINTS = [...new Set([...LOCATION_HINTS, ...profileFilters.locations])];
+  }
+  if (profileFilters.titleNegative.length) {
+    IRRELEVANT_TITLE_PHRASES = [...new Set([...IRRELEVANT_TITLE_PHRASES, ...profileFilters.titleNegative])];
+  }
+  if (profileFilters.titlePositive.length) {
+    GENERIC_TITLE_HINTS = [...new Set([...GENERIC_TITLE_HINTS, ...profileFilters.titlePositive])];
+  }
+  // Build relevance signals from profile roles + allowed titles
+  if (profileFilters.roleLabels.length || profileFilters.titlePositive.length) {
+    const profileSignals = [
+      ...profileFilters.roleLabels.map(r => r.toLowerCase()),
+      ...profileFilters.titlePositive,
+    ];
+    RELEVANCE_POSITIVE_SIGNALS = [...new Set([...RELEVANCE_POSITIVE_SIGNALS, ...profileSignals])];
+  }
+
+  // Build title filter from merged positive/negative lists
+  const titleFilter = buildTitleFilter({
+    positive: profileFilters.titlePositive,
+    negative: profileFilters.titleNegative,
+  });
 
   const activeLocFilter = locFilter || profile?.location?.country || 'india';
 
@@ -900,7 +1003,12 @@ async function main() {
   const seenUrls = loadSeenUrls();
   const seenCompanyRoles = loadSeenCompanyRoles();
 
-  if (dryRun) console.log('(dry run — no files will be written)\n');
+  if (dryRun) console.log('(dry run — no files will be written)');
+  if (profile) {
+    const roleSummary = profileFilters.roleLabels.slice(0, 3).join(', ') || 'N/A';
+    const locSummary = profileFilters.locations.slice(0, 4).join(', ') || 'N/A';
+    console.log(`  Profile: ${profile.candidate?.full_name || 'Unknown'} | Roles: ${roleSummary} | Locations: ${locSummary}\n`);
+  }
 
   const allNewOffers = [];
   const allErrors = [];
@@ -1099,7 +1207,10 @@ async function main() {
   if (runPhase3) {
     const allQueries = (config.search_queries || []).filter(q => q.enabled !== false);
 
-    let queries = allQueries;
+    let queries = allQueries.map(q => ({
+      ...q,
+      query: interpolateQuery(q.query, profileFilters),
+    }));
     if (qFilter) {
       queries = queries.filter(q =>
         (q.query || '').toLowerCase().includes(qFilter) ||
@@ -1277,8 +1388,9 @@ async function main() {
 
     process.stdout.write('  Running Open Job Data collector ... ');
     try {
-      const positives = config.title_filter?.positive || [];
-      const negatives = config.title_filter?.negative || [];
+      // Use profile-merged filters for Phase 4
+      const positives = profileFilters.titlePositive;
+      const negatives = profileFilters.titleNegative;
       const ojdBatch = await runOpenJobDataScan(positives, negatives, activeLocFilter, scanDays);
       console.log('OK\n');
 

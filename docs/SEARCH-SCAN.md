@@ -5,23 +5,20 @@ A four-phase job scanner that combines **API scanning**, **career page scraping*
 ## Architecture
 
 ```
-portals.yml
+config/profile.yml (Single Source of Truth)
     │
-    ├── tracked_companies ──► Phase 1: API Scan
-    │   (Greenhouse / Ashby / Lever board APIs)
-    │   10 concurrent requests, zero browser
-    │
-    ├── tracked_companies ──► Phase 2: Portal Scrape
-    │   (Scrapling on career page URLs)
-    │   Scrolls pages, clicks "Load More", extracts job links
-    │
-    ├── search_queries ─────► Phase 3: Search Queries
-    │   (Google → DuckDuckGo via Playwright)
-    │   Collects all result URLs per query
-    │
-    └── Open Job Data ──────► Phase 4: Dataset Scan
-        (Hugging Face Bucket changes Parquet)
-        Reads daily changes delta files, resolves companies
+    ├─► job_criteria.allowed_titles   ──► title_filter (positive)
+    ├─► job_criteria.blocked_phrases  ──► title_filter (negative)
+    ├─► job_criteria.allowed_locations ──► location filtering
+    └─► target_roles.primary          ──► search query interpolation
+                │
+                ▼
+         search-scan.js
+                │
+  ┌─────────────┼─────────────┬──────────────┐
+  ▼             ▼             ▼              ▼
+Phase 1       Phase 2       Phase 3        Phase 4
+(API Scan)   (Portals)    (Search engine) (OpenJobData)
                 │
                 ▼
         dedup + title filter
@@ -31,6 +28,36 @@ portals.yml
         data/scan-history.tsv
         data/search-urls.tsv (Phase 3 raw URLs)
 ```
+
+## Configuration
+
+### `config/profile.yml` — Single Source of Truth
+
+All search parameters (target roles, skills, locations, blocked phrases) live in one file.
+To adapt the scanner for a different profile, only edit `config/profile.yml`:
+
+| Field | Used for |
+| :--- | :--- |
+| `target_roles.primary` | Search query `{roles}` placeholder, relevance classification |
+| `job_criteria.required_skills` | Search query `{skills}` placeholder |
+| `job_criteria.allowed_titles` | Title filter (positive keywords) |
+| `job_criteria.allowed_locations` | Location filter, `{locations}` placeholder |
+| `job_criteria.blocked_phrases` | Title filter (negative keywords) |
+| `location.country` | Default `--location` value |
+
+### `portals.yml` — Defaults + Templates
+
+The `title_filter` lists in `portals.yml` act as defaults. At runtime, `profile.yml` values
+extend (not replace) them. Search queries can use template placeholders:
+
+```yaml
+- name: Ashby — Primary Roles
+  query: 'site:jobs.ashbyhq.com {roles} {locations}'
+  enabled: true
+```
+
+Supported placeholders: `{roles}`, `{skills}`, `{locations}`, `{skills_or_roles}`.
+Queries without placeholders are used as-is (fully backward compatible).
 
 ## Quick Start
 
@@ -121,8 +148,8 @@ For each `search_queries` entry in `portals.yml`:
 Queries the public daily changes feed from Open Job Data's Hugging Face storage bucket (`hf://buckets/Invicto69/Jobs-Dataset-bucket`):
 - Fetches the daily changes parquet files for the last N days (default: 3 days)
 - Resolves company IDs using the `companies.parquet` metadata lookup
-- Filters job listings case-insensitively using the positive and negative keywords defined in `portals.yml`
-- Applies target location checks (matching `is_remote` or the target country)
+- Filters job listings using the merged positive/negative keywords from `profile.yml` + `portals.yml`
+- Applies target location checks (matching `is_remote` or the target country from `profile.yml`)
 - Appends new unique listings to `data/pipeline.md` and `data/scan-history.tsv`
 
 ## Examples
