@@ -1,73 +1,33 @@
-# Portal Scanner Configuration
-# Used by /career-ops scan to discover new offers automatically.
-#
-# Strategy (3 levels):
-#   1. Playwright → careers_url of each company (real-time, reliable)
-#   2. Greenhouse API → structured JSON (fast, Greenhouse-only)
-#   3. WebSearch with site: filters (broad discovery, may be stale)
-#
-# IMPORTANT: Each company in tracked_companies MUST have careers_url.
-#
-# HOW TO CUSTOMIZE:
-#   1. Copy this file to portals.yml in the project root
-#   2. Edit title_filter.positive with YOUR target role keywords
-#   3. Add/remove companies in tracked_companies
-#   4. Adjust search_queries for your preferred job boards
-#   5. Set enabled: false on companies you don't care about
+# Portal Scanner Configuration — Generic Template
+# Used by career-ops scan to discover new offers automatically.
+# Role/skill/location values are loaded at runtime from config/profile.yml.
+# The lists below serve as defaults that profile.yml extends.
 
-# -- Title filter --
-# The scanner uses these keywords to decide if a title is relevant.
+# -- Title filter (defaults) --
+# At runtime, profile.yml `job_criteria.allowed_titles` extends positive,
+# and `job_criteria.blocked_phrases` extends negative.
 # At least 1 positive must match AND 0 negatives must match (case-insensitive).
 
 title_filter:
   positive:
-    # [CUSTOMIZE] Add keywords matching YOUR target roles
-    # -- AI/ML roles --
-    - "AI"
-    - "ML"
-    - "LLM"
-    - "Agent"
-    - "Agentic"
-    - "GenAI"
-    - "Generative AI"
-    - "NLP"
-    - "LLMOps"
-    - "MLOps"
-    - "Voice AI"
-    - "Conversational AI"
-    - "Speech"
-    # -- German AI/ML keywords (DACH market) --
-    - "KI"
-    - "Künstliche Intelligenz"
-    - "KI Engineer"
-    - "KI Trainer"
-    - "Dozent"
-    - "Weiterbildung"
-    # -- Engineering roles --
-    - "Platform Engineer"
-    - "Solutions Architect"
-    - "Solutions Engineer"
-    - "Forward Deployed"
-    - "Deployed Engineer"
-    - "Customer Engineer"
-    - "Integration Engineer"
-    # -- Product roles --
-    - "Product Manager"
-    - "Technical PM"
-    # -- Automation roles --
-    - "Automation"
-    - "Hyperautomation"
-    - "Low-Code"
-    - "No-Code"
-    - "GTM Engineer"
-    - "RevOps"
-    - "Business Systems"
-    - "Internal Tools"
-    - "Transformation"
+    # -- Golang specific --
+    - "Golang"
+    - "Go Developer"
+    - "Go Engineer"
+    - "Go Lang"
+    # -- Backend/software roles --
+    - "Backend Engineer"
+    - "Backend Developer"
+    - "Software Engineer"
+    - "Software Developer"
+    - "API Engineer"
+    - "Server Engineer"
   negative:
-    # [CUSTOMIZE] Add keywords for roles you want to exclude
+    # -- Roles to skip --
     - "Junior"
     - "Intern"
+    - "Trainee"
+    - "Fresher"
     - ".NET"
     - "Java "
     - "iOS"
@@ -81,830 +41,2870 @@ title_filter:
     - "Blockchain"
     - "Web3"
     - "Crypto"
-    - "Salesforce Admin"
     - "SAP "
-    - "Oracle EBS"
-    - "Mainframe"
+    - "Salesforce Admin"
     - "COBOL"
+    - "Mainframe"
+    - "Frontend"
+    - "React Native"
+    - "Flutter"
+    - "Data Analyst"
+    - "Business Analyst"
+    - "QA "
+    - "Manual Test"
+    - "Full Stack"
+    - "Fullstack"
+    - "Platform Engineer"
+    - "Infrastructure Engineer"
+    - "Systems Engineer"
+    - "Site Reliability"
+    - "SRE"
+    - "DevOps"
+    - "Cloud Engineer"
+    - "Lead "
+    - "Staff "
+    - "Principal"
+    - "Manager"
+    - "Director"
+    - "Vice President"
+    - "VP "
+    - "Head of"
+    - "Architect"
   seniority_boost:
-    # These prefixes add relevance but are not required
     - "Senior"
     - "Staff"
     - "Principal"
     - "Lead"
-    - "Head"
-    - "Director"
+    - "Mid"
 
 # -- Search queries --
-# Each query triggers a WebSearch. Use site: to filter by portal.
-# The scanner extracts title, URL, and company from results.
+# WebSearch queries for discovering roles. Queries can use placeholders
+# that are interpolated at runtime from config/profile.yml:
+#   {roles}          → OR-list of target_roles.primary
+#   {skills}         → OR-list of job_criteria.required_skills
+#   {locations}      → OR-list of job_criteria.allowed_locations
+#   {skills_or_roles} → union of roles + skills
+# Queries without placeholders are used as-is (backward compatible).
 
 search_queries:
-  # -- Ashby --
-  - name: Ashby — AI PM
-    query: 'site:jobs.ashbyhq.com "AI Product Manager" OR "Senior Product Manager AI" remote'
+
+  # -- Golang specific --
+  - name: Ashby — Golang
+    query: 'site:jobs.ashbyhq.com ("Golang" OR "Go Developer" OR "Go Engineer") ("remote" OR "remote from India" OR "Remote - India" OR "APAC" OR "global remote" OR "work from anywhere")'
     enabled: true
 
-  - name: Ashby — Solutions Architect
-    query: 'site:jobs.ashbyhq.com "Solutions Architect" AI OR automation remote'
+  - name: Greenhouse — Golang
+    query: '(site:boards.greenhouse.io OR site:job-boards.greenhouse.io) ("Golang" OR "Go Developer" OR "Go Engineer") ("remote" OR "remote from India" OR "Remote - India" OR "APAC" OR "global remote" OR "work from anywhere")'
     enabled: true
 
-  - name: Ashby — AI Engineer
-    query: 'site:jobs.ashbyhq.com "AI Engineer" OR "LLM Engineer" OR "Forward Deployed" remote'
+  - name: Lever — Golang
+    query: 'site:jobs.lever.co ("Golang" OR "Go Engineer" OR "Go Developer") ("remote" OR "remote from India" OR "Remote - India" OR "APAC" OR "global remote" OR "work from anywhere")'
     enabled: true
 
-  - name: Ashby — Agentic
-    query: 'site:jobs.ashbyhq.com "Agentic" OR "AI Agent" OR "Automation Architect" remote'
+  # -- Backend Engineer --
+  - name: Ashby — Backend Engineer
+    query: 'site:jobs.ashbyhq.com ("Senior Backend Engineer" OR "Backend Developer" OR "Backend Engineer" OR "Software Engineer") ("Go" OR "Golang") ("remote" OR "remote from India" OR "Remote - India" OR "APAC" OR "global remote" OR "work from anywhere")'
     enabled: true
 
-  # -- Greenhouse --
-  - name: Greenhouse — AI PM
-    query: 'site:boards.greenhouse.io OR site:job-boards.greenhouse.io "AI Product Manager" OR "Senior Product Manager" AI remote'
+  - name: Greenhouse — Backend Engineer
+    query: 'site:job-boards.greenhouse.io ("Senior Backend Engineer" OR "Software Engineer Backend" OR "Backend Engineer" OR "Software Engineer") ("Go" OR "Golang") ("remote" OR "remote from India" OR "Remote - India" OR "APAC" OR "global remote" OR "work from anywhere")'
     enabled: true
 
-  - name: Greenhouse — SA & FDE
-    query: 'site:boards.greenhouse.io OR site:job-boards.greenhouse.io "Solutions Architect" OR "Forward Deployed" AI remote'
+  - name: Lever — Backend Engineer
+    query: 'site:jobs.lever.co ("Backend Engineer" OR "Software Engineer" OR "Software Developer") ("Go" OR "Golang") ("remote" OR "remote from India" OR "Remote - India" OR "APAC" OR "global remote" OR "work from anywhere")'
     enabled: true
 
-  - name: Greenhouse — AI Engineer
-    query: 'site:boards.greenhouse.io OR site:job-boards.greenhouse.io "AI Engineer" OR "LLM" OR "Agentic" remote'
+  # -- Platform / Infra --
+  - name: Ashby — Platform Engineer
+    query: 'site:jobs.ashbyhq.com ("Platform Engineer" OR "Infrastructure Engineer" OR "Systems Engineer") ("Go" OR "Golang") ("remote" OR "remote from India" OR "Remote - India" OR "APAC" OR "global remote" OR "work from anywhere")'
     enabled: true
 
-  # -- Lever --
-  - name: Lever — AI PM
-    query: 'site:jobs.lever.co "AI Product Manager" OR "Solutions Architect" AI remote'
+  - name: Greenhouse — Platform Engineer
+    query: 'site:job-boards.greenhouse.io ("Platform Engineer" OR "Infrastructure Engineer" OR "Systems Engineer") ("Go" OR "Golang") ("remote" OR "remote from India" OR "Remote - India" OR "APAC" OR "global remote" OR "work from anywhere")'
     enabled: true
 
-  - name: Lever — AI Roles
-    query: 'site:jobs.lever.co "AI Engineer" OR "Agentic" OR "LLMOps" OR "Automation" remote'
+  # -- SRE / DevOps --
+  - name: Ashby — SRE DevOps
+    query: 'site:jobs.ashbyhq.com ("SRE" OR "Site Reliability" OR "DevOps") ("Go" OR "Golang") ("remote" OR "remote from India" OR "Remote - India" OR "APAC" OR "global remote" OR "work from anywhere")'
+    enabled: true
+
+  - name: Greenhouse — SRE DevOps
+    query: 'site:job-boards.greenhouse.io ("SRE" OR "Site Reliability" OR "DevOps") ("Go" OR "Golang") ("remote" OR "remote from India" OR "Remote - India" OR "APAC" OR "global remote" OR "work from anywhere")'
     enabled: true
 
   # -- Wellfound (startups) --
-  - name: Wellfound — AI PM
-    query: 'site:wellfound.com "AI Product Manager" OR "AI Solutions" remote'
+  - name: Wellfound — Go Backend
+    query: 'site:wellfound.com ("Golang" OR "Go Engineer" OR "Backend Engineer" OR "Go Developer") ("remote" OR "remote from India" OR "Remote - India" OR "APAC" OR "global remote" OR "work from anywhere")'
     enabled: true
 
   # -- Workable --
-  - name: Workable — AI Roles
-    query: 'site:apply.workable.com "AI" "Product Manager" OR "Solutions Architect" OR "AI Engineer" remote'
+  - name: Workable — Go Backend
+    query: 'site:apply.workable.com ("Golang" OR "Go") ("Backend" OR "Software Engineer" OR "Platform") ("remote" OR "remote from India" OR "Remote - India" OR "APAC" OR "global remote" OR "work from anywhere")'
     enabled: true
 
-  # -- No-Code / Low-Code / Automation --
-  - name: Ashby — No-Code & Automation
-    query: 'site:jobs.ashbyhq.com "no-code" OR "low-code" OR "automation engineer" OR "n8n" OR "Make" OR "Airtable" remote senior'
+  # -- Remote job boards --
+  - name: RemoteOK — Golang
+    query: 'site:remoteok.com ("golang" OR "go developer" OR "go engineer") ("india" OR "remote")'
     enabled: true
 
-  - name: Greenhouse — No-Code & Automation
-    query: 'site:job-boards.greenhouse.io "no-code" OR "low-code" OR "automation engineer" OR "business systems" senior remote'
+  - name: WeWorkRemotely — Golang
+    query: 'site:weworkremotely.com ("golang" OR "go developer" OR "go engineer") ("India" OR "APAC" OR "remote")'
     enabled: true
 
-  - name: GTM Engineer — All portals
-    query: '"GTM Engineer" OR "RevOps Engineer" OR "Growth Engineer" automation Airtable OR Make OR Clay remote'
+  - name: Jobspresso — Go Backend
+    query: 'site:jobspresso.co ("golang" OR "go developer" OR "backend engineer" OR "software engineer") ("remote" OR "India" OR "APAC")'
     enabled: true
 
-  # -- Voice AI & Conversational AI --
-  - name: Voice AI — FDE & SA
-    query: 'site:job-boards.greenhouse.io OR site:jobs.ashbyhq.com "Voice AI" OR "Conversational AI" OR "Speech" "Solutions" OR "Forward Deployed" OR "Customer Engineer"'
+  - name: Dynamite Jobs — Go Backend
+    query: 'site:dynamitejobs.com ("golang" OR "go developer" OR "backend engineer" OR "software engineer") ("remote" OR "India" OR "APAC")'
     enabled: true
 
-  - name: Voice AI — AI Engineer
-    query: 'site:job-boards.greenhouse.io OR site:jobs.ashbyhq.com "Voice" OR "Speech" "AI Engineer" OR "Deployment" OR "Integration"'
+  - name: Virtual Vocations — Go Backend
+    query: 'site:virtualvocations.com ("golang" OR "go developer" OR "backend engineer" OR "software engineer") ("remote" OR "India" OR "APAC")'
     enabled: true
 
-  # -- Contact Center AI --
-  - name: Contact Center AI — SA & SE
-    query: '"contact center" OR "customer service" "AI" "Solutions Architect" OR "Solutions Engineer" OR "Forward Deployed" remote'
+  - name: InterviewStack Job Board — Backend Remote India
+    query: 'site:interviewstack.io/job-board ("golang" OR "go developer" OR "backend developer" OR "software engineer") ("remote" OR "India")'
     enabled: true
 
-  # -- FDE specific (cross-portal) --
-  - name: FDE & Deployed Engineer — All portals
-    query: '"Forward Deployed Engineer" OR "Deployed Engineer" OR "Deployment Engineer" AI site:job-boards.greenhouse.io OR site:jobs.ashbyhq.com OR site:jobs.lever.co'
+  - name: SkipTheDrive — Go Backend
+    query: 'site:skipthedrive.com ("golang" OR "go developer" OR "backend engineer" OR "software engineer") ("remote" OR "India" OR "APAC")'
     enabled: true
 
-  # -- RemoteFront (aggregator) --
-  - name: RemoteFront — AI & Automation
-    query: 'site:remotefront.com "AI Engineer" OR "Solutions Engineer" OR "Automation" OR "LLM" OR "Agent" remote'
+  - name: Foorilla Hiring — Go Backend
+    query: 'site:foorilla.com/hiring ("golang" OR "go developer" OR "backend engineer" OR "software engineer") ("remote" OR "India")'
     enabled: true
 
-  # -- Remote-friendly Europe boards --
-
-  - name: Remotive — AI/DevRel/SA/FDE
-    query: 'site:remotive.com "AI Engineer" OR "Developer Advocate" OR "Solutions Architect" OR "Forward Deployed" OR "DevRel" Europe'
+  - name: Jobgether — Go Backend
+    query: 'site:jobgether.com ("golang" OR "go developer" OR "backend engineer" OR "software engineer") ("remote" OR "India" OR "APAC")'
     enabled: true
 
-  - name: WeWorkRemotely — AI & DX
-    query: 'site:weworkremotely.com "AI" OR "DevRel" OR "Solutions Engineer" OR "Forward Deployed" OR "Founding Engineer"'
+  - name: Hiring Cafe — Go Backend
+    query: 'site:hiring.cafe ("golang" OR "go developer" OR "backend engineer" OR "software engineer") ("remote" OR "India")'
     enabled: true
 
-  - name: Working Nomads — AI/DevRel/SA
-    query: 'site:workingnomads.com "AI Engineer" OR "Developer Advocate" OR "Solutions Architect" OR "Forward Deployed"'
+  - name: Remote100K — Go Backend
+    query: 'site:remote100k.com ("golang" OR "go developer" OR "backend engineer" OR "software engineer") ("remote" OR "India" OR "APAC")'
     enabled: true
 
-  - name: EU Remote Jobs — AI/DevRel/SA
-    query: 'site:euremotejobs.com "AI" OR "DevRel" OR "Solutions Architect" OR "Forward Deployed" OR "Founding Engineer"'
+  - name: Himalayas — Go Backend
+    query: 'site:himalayas.app/jobs ("golang" OR "go developer" OR "backend engineer" OR "software engineer") ("remote" OR "India" OR "APAC")'
     enabled: true
 
-  - name: RemoteOK — AI/DevRel/SA
-    query: 'site:remoteok.com "AI Engineer" OR "Developer Advocate" OR "Solutions Architect" OR "Forward Deployed" OR "Founding Engineer"'
+  - name: Built In Remote — Go Python Backend India
+    query: 'site:builtin.com/jobs/remote/dev-engineering/golang/python ("golang" OR "python" OR "backend engineer" OR "software engineer") ("India" OR "remote")'
     enabled: true
 
-  # -- Specialized AI / Dev-Tools / FDE boards --
-
-  - name: ai-jobs.net — DevRel/SA/FDE
-    query: 'site:ai-jobs.net "Developer Advocate" OR "Solutions Architect" OR "Forward Deployed" OR "DevRel" remote Europe'
+  - name: Working Nomads — Development India
+    query: 'site:workingnomads.com/jobs ("golang" OR "go developer" OR "backend engineer" OR "software engineer") ("India" OR "anywhere" OR "remote")'
     enabled: true
 
-  - name: ai-jobs.net — Founding/Applied AI
-    query: 'site:ai-jobs.net "Founding Engineer" OR "Applied AI Engineer" OR "Founding" remote'
+  - name: Hirist — Backend Development India
+    query: 'site:hirist.tech/c/backend-development-jobs ("golang" OR "go developer" OR "backend engineer" OR "software engineer") ("India" OR "remote")'
     enabled: true
 
-  - name: fwddeploy.com — Forward Deployed roles
-    query: 'site:fwddeploy.com "Forward Deployed" OR "Deployed Engineer" remote Europe OR EMEA'
+  - name: Astra Hiring — Go Backend
+    query: 'site:useastra.in/hiring ("golang" OR "go developer" OR "backend engineer" OR "software engineer") ("remote" OR "India")'
     enabled: true
 
-  - name: YC Jobs — DevRel/SA/FDE/Founding
-    query: 'site:ycombinator.com/jobs OR site:workatastartup.com "Forward Deployed" OR "Developer Advocate" OR "Founding Engineer" OR "Solutions Architect" remote'
+    # -- Location: Madhya Pradesh (Indore, Bhopal) --
+  - name: Naukri — Go Backend MP
+    query: 'site:naukri.com ("Golang" OR "Go Developer" OR "Go Engineer" OR "Backend Engineer") ("Indore" OR "Bhopal" OR "Madhya Pradesh")'
     enabled: true
 
-  - name: YC Jobs — Applied AI
-    query: 'site:workatastartup.com "Applied AI" OR "AI Engineer" OR "AI Agent" remote Europe'
+  - name: LinkedIn — Go Backend MP
+    query: 'site:linkedin.com/jobs ("Golang" OR "Go Engineer" OR "Backend Engineer") ("Indore" OR "Bhopal" OR "Madhya Pradesh")'
     enabled: true
 
-  # -- Spanish market specialized (high-value for Madrid/Barcelona-based candidates) --
-
-  - name: Manfred — Tech Senior España
-    query: 'site:getmanfred.com/en/job-offers "Solutions Architect" OR "DevRel" OR "Forward Deployed" OR "AI Engineer" OR "Founding"'
+  # -- Location: Gujarat (Ahmedabad, Surat, Vadodara) --
+  - name: Naukri — Go Backend Gujarat
+    query: 'site:naukri.com ("Golang" OR "Go Developer" OR "Backend Engineer" OR "Software Engineer") ("Ahmedabad" OR "Surat" OR "Vadodara" OR "Gujarat")'
     enabled: true
 
-  - name: Manfred — Remote AI/Senior
-    query: 'site:getmanfred.com "remote" "AI" OR "Senior" OR "Staff" OR "Lead"'
+  - name: LinkedIn — Go Backend Gujarat
+    query: 'site:linkedin.com/jobs ("Golang" OR "Go Engineer" OR "Backend Engineer") ("Ahmedabad" OR "Surat" OR "Vadodara" OR "Gujarat")'
     enabled: true
 
-  - name: Tecnoempleo — España IT
-    query: 'site:tecnoempleo.com "AI Engineer" OR "Solutions Architect" OR "DevRel" OR "Forward Deployed" OR "Founding Engineer"'
+  # -- General India Remote (Top Portals) --
+  - name: Instahyre — Go Backend India
+    query: 'site:instahyre.com/jobs ("Golang" OR "Go Developer") ("Remote" OR "India" OR "Bengaluru" OR "Bangalore" OR "Pune")'
     enabled: true
 
-  - name: Tecnoempleo — Remoto Senior
-    query: 'site:tecnoempleo.com "remoto" OR "remote" Senior "AI" OR "Architect" OR "Lead"'
+  - name: Instahyre — Golang India
+    query: 'site:instahyre.com/golang-jobs-in-anywhere-in-india ("Golang" OR "Go Developer" OR "Backend Engineer") ("India" OR "remote")'
     enabled: true
 
-  - name: JobFluent — Spain startups
-    query: 'site:jobfluent.com Madrid OR Barcelona "AI" OR "Engineer" OR "Solutions" OR "DevRel"'
+  - name: Naukri — Go Backend India
+    query: 'site:naukri.com/job-listings ("Golang" OR "Go Developer" OR "Go Engineer") ("Remote" OR "India" OR "Bengaluru" OR "Bangalore" OR "Pune" OR "Mumbai" OR "Hyderabad" OR "Delhi" OR "Chennai")'
     enabled: true
 
-  - name: Welcome to the Jungle — Spain tech
-    query: 'site:welcometothejungle.com Spain OR Madrid OR Barcelona "AI Engineer" OR "Solutions Architect" OR "DevRel" OR "Forward Deployed"'
+  - name: Cutshort — Go Backend India
+    query: 'site:cutshort.io/jobs ("Golang" OR "Go Developer") ("Remote" OR "India")'
     enabled: true
 
-  # -- DevRel-specific boards --
-
-  - name: DevRelX Jobs
-    query: 'site:devrelx.com/jobs remote OR Europe OR EMEA'
+  - name: LinkedIn — Go Backend India (Remote)
+    query: 'site:linkedin.com/jobs/view ("Golang" OR "Go Engineer" OR "Go Developer") ("India" OR "Bengaluru" OR "Bangalore" OR "Pune" OR "Mumbai") ("remote")'
     enabled: true
 
-  - name: TrueUp — DevRel roles
-    query: 'site:trueup.io/devrel OR site:trueup.io "Developer Advocate" OR "DevRel" remote Europe'
+  - name: Wellfound — Go Backend Gujarat
+    query: 'site:wellfound.com ("Golang" OR "Go Engineer" OR "Backend Engineer") ("Ahmedabad" OR "Gujarat")'
     enabled: true
 
-  - name: Remote Rocketship — DevRel
-    query: 'site:remoterocketship.com/jobs/developer-relations OR site:remoterocketship.com "DevRel" remote'
+  # -- Location: Nagpur --
+  - name: Naukri — Go Backend Nagpur
+    query: 'site:naukri.com ("Golang" OR "Go Developer" OR "Backend Engineer" OR "Software Engineer") ("Nagpur")'
     enabled: true
 
-  - name: DevRel Job board
-    query: 'site:devreljob.com remote OR Europe OR EMEA'
+  - name: LinkedIn — Go Backend Nagpur
+    query: 'site:linkedin.com/jobs ("Golang" OR "Go Engineer" OR "Backend Engineer") ("Nagpur")'
     enabled: true
 
-  # -- European / global aggregators --
-
-  - name: Himalayas — Remote AI/Dev-tools
-    query: 'site:himalayas.app "AI Engineer" OR "Solutions Architect" OR "Developer Advocate" OR "Forward Deployed" OR "Founding Engineer" Europe'
+  # -- Location: Jaipur --
+  - name: Naukri — Go Backend Jaipur
+    query: 'site:naukri.com ("Golang" OR "Go Developer" OR "Backend Engineer" OR "Software Engineer") ("Jaipur" OR "Rajasthan")'
     enabled: true
 
-  - name: Jooble — España Tech Senior
-    query: 'site:jooble.org "AI Engineer" OR "Solutions Architect" OR "DevRel" Madrid OR remote España'
+  - name: LinkedIn — Go Backend Jaipur
+    query: 'site:linkedin.com/jobs ("Golang" OR "Go Engineer" OR "Backend Engineer") ("Jaipur" OR "Rajasthan")'
     enabled: true
 
-  - name: EU Data Jobs — AI/ML Europe
-    query: 'site:eudatajobs.com "AI" OR "ML" OR "Data" "Engineer" OR "Architect" remote Europe'
+  - name: Wellfound — Go Backend Jaipur
+    query: 'site:wellfound.com ("Golang" OR "Backend Engineer") ("Jaipur")'
     enabled: true
 
-  - name: HN Who's Hiring — Remote AI
-    query: 'site:news.ycombinator.com OR site:hnrss.org "AI Engineer" OR "Forward Deployed" OR "DevRel" OR "Founding Engineer" remote'
+  # -- Indian job boards: broad Go backend sweep --
+  - name: Cutshort — Go Backend India
+    query: 'site:cutshort.io ("Golang" OR "Go Engineer" OR "Backend Engineer") ("Ahmedabad" OR "Jaipur" OR "Indore" OR "Nagpur" OR "remote")'
+    enabled: true
+
+  - name: Instahyre — Go Backend India
+    query: 'site:instahyre.com ("Golang" OR "Go Engineer" OR "Backend Engineer") ("Ahmedabad" OR "Jaipur" OR "Indore" OR "Nagpur" OR "remote")'
+    enabled: true
+
+  - name: Foundit — Go Backend India
+    query: 'site:foundit.in ("Golang" OR "Go Developer" OR "Backend Engineer") ("Ahmedabad" OR "Jaipur" OR "Indore" OR "Nagpur")'
+    enabled: true
+
+    # -- Y Combinator / WorkAtAStartup --
+  - name: WorkAtAStartup — Go Backend
+    query: 'site:workatastartup.com ("Golang" OR "Go Engineer" OR "Go Developer" OR "Backend Engineer") ("remote" OR "India" OR "APAC" OR "global")'
+    enabled: true
+
+  - name: YCombinator Jobs — Go Backend
+    query: 'site:ycombinator.com/companies ("Golang" OR "Go Engineer" OR "Backend Engineer") ("remote" OR "India")'
+    enabled: true
+
+  # -- Remote-specialist boards --
+  - name: RemoteRocketship — Go Backend India
+    query: 'site:remoterocketship.com ("Golang" OR "Go" OR "Backend Engineer") ("India" OR "remote")'
+    enabled: true
+
+  - name: Arc.dev — Go Backend Remote India
+    query: 'site:arc.dev ("Golang" OR "Go Developer" OR "Backend Engineer") ("India" OR "remote" OR "APAC")'
+    enabled: true
+
+  - name: Turing — Go Backend Remote India
+    query: 'site:turing.com ("Golang" OR "Go Engineer" OR "Backend Engineer") ("India" OR "remote")'
+    enabled: true
+
+  - name: Contra — Go Backend Remote
+    query: 'site:contra.com ("Golang" OR "Go Engineer" OR "Backend Engineer") ("remote" OR "India")'
+    enabled: true
+
+  - name: Crossover — Backend Engineer India
+    query: 'site:crossover.com ("Go" OR "Backend Engineer" OR "Software Engineer") ("India" OR "remote")'
+    enabled: true
+
+  - name: TrueWorkFromHome — Go Backend Remote
+    query: 'site:trueworkfromhome.com ("Golang" OR "Go" OR "Backend Engineer" OR "Software Engineer") ("India" OR "remote")'
+    enabled: true
+
+  # -- Indian job boards (additional) --
+  - name: Indeed India — Go Backend
+    query: 'site:indeed.com ("Golang" OR "Go Developer" OR "Go Engineer" OR "Backend Engineer") ("remote" OR "India" OR "Bangalore" OR "Bengaluru")'
+    enabled: true
+
+  - name: Shine — Go Backend India
+    query: 'site:shine.com ("Golang" OR "Go Engineer" OR "Backend") ("remote" OR "Bangalore" OR "Indore" OR "Jaipur" OR "Ahmedabad" OR "Nagpur")'
+    enabled: true
+
+  # -- Startup ecosystem boards --
+  - name: AngelList/Wellfound — Go Backend India (startups)
+    query: 'site:wellfound.com/role/r/software-engineer ("Golang" OR "Go" OR "Backend") ("India" OR "remote")'
+    enabled: true
+
+  - name: Freshteam — Go Backend India
+    query: 'site:freshteam.com/jobs ("Golang" OR "Go Developer" OR "Backend Engineer") ("India" OR "remote")'
     enabled: true
 
 # -- Tracked companies --
-# Companies whose career pages are checked directly.
-# scan_method: playwright (default), websearch, greenhouse_api
-# For Greenhouse companies, add api: field for faster structured JSON access.
+# Companies known to hire remote Go engineers.
+# careers_url = direct link to their job board page.
 
 tracked_companies:
 
-  # -- AI Labs & LLM providers --
+  # -- Go-heavy companies (use Go as primary language) --
 
-  - name: Anthropic
-    careers_url: https://job-boards.greenhouse.io/anthropic
-    api: https://boards-api.greenhouse.io/v1/boards/anthropic/jobs
+  - name: Canonical
+    careers_url: https://job-boards.greenhouse.io/canonicaljobs
+    api: https://boards-api.greenhouse.io/v1/boards/canonicaljobs/jobs
+    notes: "Ubuntu/Linux. Heavy Go. Remote global."
     enabled: true
 
-  - name: OpenAI
-    careers_url: https://openai.com/careers
+  - name: Grafana Labs
+    careers_url: https://jobs.ashbyhq.com/grafana
+    notes: "Grafana, Loki, Tempo — all Go. Remote-first."
+    enabled: true
+
+  - name: HashiCorp
+    careers_url: https://www.hashicorp.com/careers
     scan_method: websearch
-    scan_query: 'site:openai.com/careers "Solutions" OR "Forward Deployed" OR "AI Engineer"'
+    scan_query: 'site:hashicorp.com/careers "Go" OR "Golang" OR "Software Engineer"'
+    notes: "Terraform, Vault, Consul — all Go. Remote."
     enabled: true
 
-  # -- Voice AI & Conversational AI --
-
-  - name: PolyAI
-    careers_url: https://job-boards.eu.greenhouse.io/polyai
-    api: https://boards-api.greenhouse.io/v1/boards/polyai/jobs
-    notes: "UK. Voice AI for enterprise contact centers."
-    enabled: true
-
-  - name: Parloa
-    careers_url: https://job-boards.eu.greenhouse.io/parloa
-    api: https://boards-api.greenhouse.io/v1/boards/parloa/jobs
-    notes: "Berlin EMEA. Voice AI enterprise."
-    enabled: true
-
-  - name: Intercom
-    careers_url: https://job-boards.greenhouse.io/intercom
-    api: https://boards-api.greenhouse.io/v1/boards/intercom/jobs
-    notes: "Dublin EMEA. Fin AI agent."
-    enabled: true
-
-  - name: Hume AI
-    careers_url: https://job-boards.greenhouse.io/humeai
-    api: https://boards-api.greenhouse.io/v1/boards/humeai/jobs
-    notes: "NYC. Empathic voice AI."
-    enabled: true
-
-  - name: ElevenLabs
-    careers_url: https://jobs.ashbyhq.com/elevenlabs
+  - name: IQVIA
+    careers_url: https://jobs.iqvia.com/en/jobs?keywords=Software&cities=Bengaluru%2CHyderabad%2CKochi%2CKolkata%2CMumbai%2CPune%2CTelangana%2CThane#job-listing
     scan_method: websearch
-    scan_query: 'site:jobs.ashbyhq.com/elevenlabs'
-    notes: "Voice AI TTS leader."
+    scan_query: 'site:jobs.iqvia.com/en/jobs ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer") ("Bengaluru" OR "Hyderabad" OR "Kochi" OR "Kolkata" OR "Mumbai" OR "Pune" OR "Thane" OR "Telangana")'
+    notes: "Healthcare tech. Software roles across major India hubs."
     enabled: true
 
-  - name: Deepgram
-    careers_url: https://jobs.ashbyhq.com/deepgram
+  - name: IPinfo
+    careers_url: https://ipinfo.io/
     scan_method: websearch
-    scan_query: 'site:deepgram.com/careers OR "deepgram" "Solutions" OR "AI Engineer" site:jobs.ashbyhq.com'
-    notes: "STT/TTS APIs."
+    scan_query: 'site:ipinfo.io ("careers" OR "jobs") ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer")'
+    notes: "IP intelligence platform. Go/backend-friendly company."
     enabled: true
 
-  - name: Vapi
-    careers_url: https://jobs.ashbyhq.com/vapi
+  - name: Ironin
+    careers_url: https://careers.ironin.it/#Open-recruitments
     scan_method: websearch
-    scan_query: 'site:jobs.ashbyhq.com/vapi'
-    notes: "Voice AI infrastructure."
+    scan_query: 'site:careers.ironin.it ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Open recruitments")'
+    notes: "Engineering consultancy with open recruitment board."
     enabled: true
 
-  - name: Bland AI
-    careers_url: https://jobs.ashbyhq.com/bland
+  - name: iOS App Templates
+    careers_url: https://iosapptemplates.com/
     scan_method: websearch
-    scan_query: 'site:jobs.ashbyhq.com/bland'
-    notes: "Voice phone agents. $65M Series B."
+    scan_query: 'site:iosapptemplates.com ("careers" OR "jobs" OR "hiring") ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer")'
+    notes: "Template/product studio. Search-driven scan because jobs are not on a standard ATS."
     enabled: true
 
-  # -- AI-native platforms (FDE/SA teams) --
-
-  - name: Retool
-    careers_url: https://retool.com/careers
+  - name: IOG
+    careers_url: https://www.iog.io/
     scan_method: websearch
-    scan_query: 'site:retool.com/careers "Deployed" OR "AI" OR "Solutions"'
-    notes: "London. Popularized Deployed Engineer role."
+    scan_query: 'site:iog.io ("careers" OR "jobs") ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer")'
+    notes: "Engineering organization. Search-driven scan for career listings."
     enabled: true
 
-  - name: Airtable
-    careers_url: https://job-boards.greenhouse.io/airtable
-    api: https://boards-api.greenhouse.io/v1/boards/airtable/jobs
-    notes: "No-code + AI platform."
+  - name: Docker
+    careers_url: https://job-boards.greenhouse.io/docker
+    api: https://boards-api.greenhouse.io/v1/boards/docker/jobs
+    notes: "Docker is written in Go. Remote-friendly."
     enabled: true
 
-  - name: Vercel
-    careers_url: https://job-boards.greenhouse.io/vercel
-    api: https://boards-api.greenhouse.io/v1/boards/vercel/jobs
-    notes: "AI SDK, v0.dev. Frontend AI tooling."
+  - name: Mattermost
+    careers_url: https://jobs.lever.co/mattermost
+    notes: "Open-source Slack alternative in Go. Remote."
+    enabled: true
+
+  - name: CockroachDB (Cockroach Labs)
+    careers_url: https://job-boards.greenhouse.io/cockroachlabs
+    api: https://boards-api.greenhouse.io/v1/boards/cockroachlabs/jobs
+    notes: "Distributed SQL database in Go."
+    enabled: true
+
+  - name: Dgraph Labs
+    careers_url: https://jobs.lever.co/dgraph-labs
+    notes: "Graph database written in Go."
+    enabled: true
+
+  - name: Gitpod
+    careers_url: https://jobs.ashbyhq.com/gitpod
+    notes: "Cloud dev environments. Go backend. Remote."
     enabled: true
 
   - name: Temporal
     careers_url: https://job-boards.greenhouse.io/temporal
     api: https://boards-api.greenhouse.io/v1/boards/temporal/jobs
-    notes: "Workflow orchestration."
+    notes: "Workflow orchestration in Go. Remote."
     enabled: true
 
-  - name: Arize AI
-    careers_url: https://job-boards.greenhouse.io/arizeai
-    api: https://boards-api.greenhouse.io/v1/boards/arizeai/jobs
-    notes: "LLMOps / AI observability."
+  - name: Sourcegraph
+    careers_url: https://job-boards.greenhouse.io/sourcegraph91
+    api: https://boards-api.greenhouse.io/v1/boards/sourcegraph91/jobs
+    notes: "Code search & AI. Go backend. Remote."
     enabled: true
 
-  - name: RunPod
-    careers_url: https://job-boards.greenhouse.io/runpod
-    api: https://boards-api.greenhouse.io/v1/boards/runpod/jobs
-    notes: "GPU cloud for AI."
+  - name: Buf
+    careers_url: https://jobs.ashbyhq.com/buf
+    notes: "Protobuf tooling in Go. Remote."
     enabled: true
 
-  - name: Glean
-    careers_url: https://job-boards.greenhouse.io/gleanwork
-    api: https://boards-api.greenhouse.io/v1/boards/gleanwork/jobs
-    notes: "Enterprise AI search."
+  - name: Teleport
+    careers_url: https://job-boards.greenhouse.io/teleport
+    api: https://boards-api.greenhouse.io/v1/boards/teleport/jobs
+    notes: "Infrastructure access in Go. Remote."
     enabled: true
 
-  # -- Contact Center AI & CX --
+  - name: MinIO
+    careers_url: https://jobs.ashbyhq.com/minio
+    notes: "Object storage in Go. Remote."
+    enabled: true
 
-  - name: Ada
-    careers_url: https://job-boards.greenhouse.io/ada
+  - name: Cloudflare
+    careers_url: https://job-boards.greenhouse.io/cloudflare
+    api: https://boards-api.greenhouse.io/v1/boards/cloudflare/jobs
+    notes: "Edge/CDN. Go + Rust. Hybrid/remote."
+    enabled: true
+
+  # -- Cloud / Infra companies (use Go heavily) --
+
+  - name: DigitalOcean
+    careers_url: https://job-boards.greenhouse.io/digitalocean98
+    api: https://boards-api.greenhouse.io/v1/boards/digitalocean98/jobs
+    notes: "Cloud. Go backend. Remote."
+    enabled: true
+
+  - name: Datadog
+    careers_url: https://job-boards.greenhouse.io/datadog
+    api: https://boards-api.greenhouse.io/v1/boards/datadog/jobs
+    notes: "Observability. Go agents/services. Remote options."
+    enabled: true
+
+  - name: GitLab
+    careers_url: https://job-boards.greenhouse.io/gitlab
+    api: https://boards-api.greenhouse.io/v1/boards/gitlab/jobs
+    notes: "DevOps platform. Go backend. All-remote since day 1."
+    enabled: true
+
+  - name: Netlify
+    careers_url: https://job-boards.greenhouse.io/netlify
+    api: https://boards-api.greenhouse.io/v1/boards/netlify/jobs
+    notes: "Jamstack platform. Go services. Remote-first."
+    enabled: true
+
+  - name: Fly.io
+    careers_url: https://fly.io/jobs
     scan_method: websearch
-    scan_query: '"ada.cx" OR "ada" "AI" "Solutions" OR "Engineer" site:jobs.ashbyhq.com OR site:job-boards.greenhouse.io'
-    notes: "Toronto + remote. AI customer service."
+    scan_query: 'site:fly.io/jobs'
+    notes: "Edge compute. Go + Rust. Remote."
     enabled: true
-
-  - name: LivePerson
-    careers_url: https://liveperson.com/company/careers
-    scan_method: websearch
-    scan_query: 'site:liveperson.com/careers OR "liveperson" "Solutions" OR "AI" site:job-boards.greenhouse.io'
-    notes: "Remote EMEA. Conversational AI enterprise."
-    enabled: true
-
-  - name: Sierra
-    careers_url: https://jobs.ashbyhq.com/sierra
-    scan_method: websearch
-    scan_query: '"sierra.ai" "AI" "Forward Deployed" OR "Applied" OR "Solutions" site:jobs.ashbyhq.com'
-    notes: "Bret Taylor (ex-CEO Salesforce). AI customer agents."
-    enabled: true
-
-  - name: Decagon
-    careers_url: https://jobs.ashbyhq.com/decagon
-    scan_method: websearch
-    scan_query: '"decagon" "AI" "Forward Deployed" OR "Solutions" site:jobs.ashbyhq.com'
-    notes: "AI customer support agents."
-    enabled: true
-
-  # -- Enterprise comms & contact center --
-
-  - name: Talkdesk
-    careers_url: https://www.talkdesk.com/careers
-    scan_method: websearch
-    scan_query: 'site:talkdesk.com/careers "AI" OR "Solutions Architect" OR "AI Engineer"'
-    notes: "Lisbon. Contact center AI. EMEA friendly."
-    enabled: true
-
-  - name: Twilio
-    careers_url: https://www.twilio.com/en-us/company/jobs
-    scan_method: websearch
-    scan_query: 'site:twilio.com/company/jobs "AI" OR "Voice" "Solutions" OR "Architect"'
-    notes: "Voice/messaging infrastructure."
-    enabled: true
-
-  - name: Dialpad
-    careers_url: https://www.dialpad.com/careers
-    scan_method: websearch
-    scan_query: '"dialpad" "AI" "Solutions" OR "Engineer" site:job-boards.greenhouse.io OR site:jobs.ashbyhq.com'
-    notes: "Voice AI for business comms."
-    enabled: true
-
-  - name: Gong
-    careers_url: https://www.gong.io/careers
-    scan_method: websearch
-    scan_query: 'site:gong.io/careers "AI" OR "Solutions" OR "Architect"'
-    notes: "Revenue intelligence with voice AI."
-    enabled: true
-
-  - name: Genesys
-    careers_url: https://www.genesys.com/careers
-    scan_method: websearch
-    scan_query: 'site:genesys.com/careers "AI" "Solutions Architect" OR "AI Engineer"'
-    notes: "Contact center cloud + AI."
-    enabled: true
-
-  - name: Salesforce
-    careers_url: https://careers.salesforce.com
-    scan_method: websearch
-    scan_query: 'site:careers.salesforce.com "Forward Deployed" OR "AI Engineer" OR "Agentforce"'
-    notes: "Agentforce = AI agents platform."
-    enabled: true
-
-  # -- AI infra & LLMOps --
-
-  - name: Langfuse
-    careers_url: https://langfuse.com/careers
-    scan_method: websearch
-    scan_query: '"langfuse" careers OR jobs "engineer" OR "solutions"'
-    notes: "Berlin. LLMOps / observability."
-    enabled: true
-
-  - name: Lindy
-    careers_url: https://jobs.ashbyhq.com/lindy
-    scan_method: websearch
-    scan_query: '"lindy.ai" "AI" "Forward Deployed" OR "Solutions" site:jobs.ashbyhq.com'
-    notes: "AI agent management platform."
-    enabled: true
-
-  - name: Cognigy
-    careers_url: https://careers.cognigy.com
-    scan_method: websearch
-    scan_query: '"cognigy" careers "AI" OR "Solutions" OR "Engineer"'
-    notes: "Dusseldorf EMEA. Conversational AI enterprise."
-    enabled: true
-
-  - name: Speechmatics
-    careers_url: https://job-boards.greenhouse.io/speechmatics
-    api: https://boards-api.greenhouse.io/v1/boards/speechmatics/jobs
-    notes: "Cambridge UK. Speech recognition platform."
-    enabled: true
-
-  # -- No-Code/Low-Code & Automation --
-
-  - name: n8n
-    careers_url: https://jobs.ashbyhq.com/n8n
-    scan_method: websearch
-    scan_query: 'site:jobs.ashbyhq.com/n8n'
-    notes: "Berlin + remote EU/US. Workflow automation."
-    enabled: true
-
-  - name: Zapier
-    careers_url: https://jobs.ashbyhq.com/zapier
-    scan_method: websearch
-    scan_query: 'site:jobs.ashbyhq.com/zapier'
-    notes: "Remote-first. Automation platform leader."
-    enabled: true
-
-  - name: Make.com (Celonis)
-    careers_url: https://www.make.com/en/careers
-    scan_method: websearch
-    scan_query: 'site:make.com/en/careers OR "make.com" "engineer" OR "solutions" site:jobs.ashbyhq.com'
-    notes: "Celonis parent company. Automation platform."
-    enabled: true
-
-  # -- Ashby-based (Playwright direct) --
-
-  - name: Cohere
-    careers_url: https://jobs.ashbyhq.com/cohere
-    notes: "AI/LLM provider. Toronto + remote."
-    enabled: true
-
-  - name: LangChain
-    careers_url: https://jobs.ashbyhq.com/langchain
-    notes: "LangChain/LangSmith framework."
-    enabled: true
-
-  - name: Pinecone
-    careers_url: https://jobs.ashbyhq.com/pinecone
-    notes: "Vector database."
-    enabled: true
-
-  # -- Lever-based (Playwright direct) --
-
-  - name: Mistral AI
-    careers_url: https://jobs.lever.co/mistral
-    notes: "Paris. European AI lab."
-    enabled: true
-
-  - name: Weights & Biases
-    careers_url: https://jobs.lever.co/wandb
-    notes: "MLOps platform."
-    enabled: true
-
-  - name: Palantir
-    careers_url: https://jobs.lever.co/palantir
-    notes: "FDE roles. Mostly US/London."
-    enabled: true
-
-  # -- European tech (EMEA-friendly) --
-
-  - name: Factorial
-    careers_url: https://job-boards.greenhouse.io/factorial
-    scan_method: websearch
-    scan_query: 'site:jobs.greenhouse.io/factorial'
-    notes: "Barcelona. HR SaaS unicorn."
-    enabled: true
-
-  - name: Attio
-    careers_url: https://jobs.ashbyhq.com/attio
-    scan_method: websearch
-    scan_query: 'site:attio.com/careers OR site:jobs.ashbyhq.com/attio'
-    notes: "Remote EU. AI-native CRM. Series B $52M."
-    enabled: true
-
-  - name: Tinybird
-    careers_url: https://jobs.ashbyhq.com/tinybird
-    scan_method: websearch
-    scan_query: 'site:tinybird.co/careers OR site:jobs.ashbyhq.com/tinybird'
-    notes: "Remote. Real-time data platform."
-    enabled: true
-
-  - name: Clarity AI
-    careers_url: https://jobs.lever.co/clarity-ai
-    scan_method: websearch
-    scan_query: 'site:clarity.ai/careers OR site:jobs.lever.co/clarity-ai'
-    notes: "Madrid/Remote. Sustainability analytics with AI."
-    enabled: true
-
-  - name: Travelperk
-    careers_url: https://jobs.ashbyhq.com/travelperk
-    scan_method: websearch
-    scan_query: 'site:jobs.ashbyhq.com/travelperk'
-    notes: "Barcelona. Business travel unicorn."
-    enabled: true
-
-  # -- DACH & European AI ecosystem --
-  # All entries below have been verified against the Greenhouse / Ashby /
-  # Lever / Workable APIs or live job boards. Greenhouse boards expose a
-  # JSON API at https://boards-api.greenhouse.io/v1/boards/{slug}/jobs which
-  # the scanner can hit directly via the api: field.
-
-  # -- DACH AI labs & frontier model providers --
-
-  - name: Aleph Alpha
-    careers_url: https://jobs.ashbyhq.com/AlephAlpha
-    scan_method: websearch
-    scan_query: 'site:jobs.ashbyhq.com/AlephAlpha'
-    notes: "Heidelberg DE. Sovereign European LLM provider, enterprise & government focus."
-    enabled: true
-
-  - name: DeepL
-    careers_url: https://jobs.ashbyhq.com/DeepL
-    scan_method: websearch
-    scan_query: 'site:jobs.ashbyhq.com/DeepL'
-    notes: "Cologne DE. Translation & language AI. 60+ open roles, EU/DACH heavy."
-    enabled: true
-
-  - name: Black Forest Labs
-    careers_url: https://job-boards.greenhouse.io/blackforestlabs
-    api: https://boards-api.greenhouse.io/v1/boards/blackforestlabs/jobs
-    notes: "Freiburg DE / SF. FLUX image models, ex-Stable Diffusion team."
-    enabled: true
-
-  - name: Helsing
-    careers_url: https://job-boards.greenhouse.io/helsing
-    api: https://boards-api.greenhouse.io/v1/boards/helsing/jobs
-    notes: "Munich / Berlin / London / Paris. Defence AI unicorn. 100+ roles, ML & FDE."
-    enabled: true
-
-  # -- DACH enterprise & SaaS (AI-heavy) --
-
-  - name: Celonis
-    careers_url: https://job-boards.greenhouse.io/celonis
-    api: https://boards-api.greenhouse.io/v1/boards/celonis/jobs
-    notes: "Munich / NYC. Process intelligence, Applied AI Engineer roles, Field CTOs."
-    enabled: true
-
-  - name: Contentful
-    careers_url: https://job-boards.greenhouse.io/contentful
-    api: https://boards-api.greenhouse.io/v1/boards/contentful/jobs
-    notes: "Berlin / Denver. Headless CMS, AI content workflows."
-    enabled: true
-
-  - name: GetYourGuide
-    careers_url: https://job-boards.greenhouse.io/getyourguide
-    api: https://boards-api.greenhouse.io/v1/boards/getyourguide/jobs
-    notes: "Berlin. Travel marketplace, ML & data platform roles."
-    enabled: true
-
-  - name: HelloFresh
-    careers_url: https://job-boards.greenhouse.io/hellofresh
-    api: https://boards-api.greenhouse.io/v1/boards/hellofresh/jobs
-    notes: "Berlin. Meal kit unicorn, large data/ML org."
-    enabled: true
-
-  # -- DACH fintech --
-
-  - name: N26
-    careers_url: https://job-boards.greenhouse.io/n26
-    api: https://boards-api.greenhouse.io/v1/boards/n26/jobs
-    notes: "Berlin / Barcelona. Mobile bank, ~50 roles, ML & risk."
-    enabled: true
-
-  - name: Trade Republic
-    careers_url: https://job-boards.greenhouse.io/traderepublicbank
-    api: https://boards-api.greenhouse.io/v1/boards/traderepublicbank/jobs
-    notes: "Berlin / London / Paris. Neobroker, ~50 roles, platform & data."
-    enabled: true
-
-  - name: SumUp
-    careers_url: https://job-boards.greenhouse.io/sumup
-    api: https://boards-api.greenhouse.io/v1/boards/sumup/jobs
-    notes: "Berlin / London. Payments fintech, EU + LATAM hiring."
-    enabled: true
-
-  - name: Qonto
-    careers_url: https://jobs.lever.co/qonto
-    notes: "Paris / Berlin / Barcelona / Milan. SMB neobank, MLOps for AI Product roles."
-    enabled: true
-
-  # -- DACH logistics / mobility --
-
-  - name: Forto
-    careers_url: https://jobs.lever.co/forto
-    notes: "Berlin DE. Digital freight forwarder, product & data roles, German + English."
-    enabled: true
-
-  # -- Switzerland / Austria AI --
-
-  - name: Lakera
-    careers_url: https://jobs.ashbyhq.com/lakera.ai
-    scan_method: websearch
-    scan_query: 'site:jobs.ashbyhq.com/lakera.ai'
-    notes: "Zurich CH / SF. AI security & guardrails. Has Forward Deployed Engineer roles."
-    enabled: true
-
-  - name: Scandit
-    careers_url: https://job-boards.greenhouse.io/scandit
-    api: https://boards-api.greenhouse.io/v1/boards/scandit/jobs
-    notes: "Zurich CH. Computer vision / smart data capture, ML roles."
-    enabled: true
-
-  - name: Cradle
-    careers_url: https://jobs.ashbyhq.com/cradlebio
-    scan_method: websearch
-    scan_query: 'site:jobs.ashbyhq.com/cradlebio'
-    notes: "Zurich CH / Amsterdam. AI-guided protein design, ML researcher roles."
-    enabled: true
-
-  # -- France AI ecosystem --
-
-  - name: Hugging Face
-    careers_url: https://apply.workable.com/huggingface/
-    scan_method: websearch
-    scan_query: 'site:apply.workable.com/huggingface'
-    notes: "Paris / NYC / Remote. ML hub & open-source models."
-    enabled: true
-
-  - name: Photoroom
-    careers_url: https://jobs.ashbyhq.com/photoroom
-    scan_method: websearch
-    scan_query: 'site:jobs.ashbyhq.com/photoroom'
-    notes: "Paris FR. AI photo editor, Head of CV / Head of ML roles."
-    enabled: true
-
-  - name: Pigment
-    careers_url: https://jobs.lever.co/pigment
-    notes: "Paris FR / NYC / London. AI-powered FP&A planning platform."
-    enabled: true
-
-  # -- UK & Ireland AI (EU-friendly hiring) --
-
-  - name: Wayve
-    careers_url: https://job-boards.greenhouse.io/wayve
-    api: https://boards-api.greenhouse.io/v1/boards/wayve/jobs
-    notes: "London UK. Embodied AI for self-driving, ML & robotics roles."
-    enabled: true
-
-  - name: Isomorphic Labs
-    careers_url: https://job-boards.greenhouse.io/isomorphiclabs
-    api: https://boards-api.greenhouse.io/v1/boards/isomorphiclabs/jobs
-    notes: "London / Lausanne / Cambridge MA. DeepMind spin-out for drug discovery AI."
-    enabled: true
-
-  - name: PhysicsX
-    careers_url: https://job-boards.greenhouse.io/physicsx
-    api: https://boards-api.greenhouse.io/v1/boards/physicsx/jobs
-    notes: "London UK. Physics-informed ML for engineering, ~40 roles."
-    enabled: true
-
-  - name: Stability AI
-    careers_url: https://job-boards.greenhouse.io/stabilityai
-    api: https://boards-api.greenhouse.io/v1/boards/stabilityai/jobs
-    notes: "London / SF. Generative AI image/video research lab."
-    enabled: true
-
-  - name: Synthesia
-    careers_url: https://jobs.ashbyhq.com/synthesia
-    scan_method: websearch
-    scan_query: 'site:jobs.ashbyhq.com/synthesia OR site:job-boards.greenhouse.io/synthesia'
-    notes: "London UK. AI video generation for enterprise, $4B valuation."
-    enabled: true
-
-  - name: Faculty
-    careers_url: https://jobs.ashbyhq.com/faculty
-    scan_method: websearch
-    scan_query: 'site:jobs.ashbyhq.com/faculty'
-    notes: "London UK. Applied AI consultancy. 80+ roles, AI Safety / MLE / Delivery."
-    enabled: true
-
-  - name: Causaly
-    careers_url: https://jobs.ashbyhq.com/causaly
-    scan_method: websearch
-    scan_query: 'site:jobs.ashbyhq.com/causaly'
-    notes: "London / Athens. Biomedical knowledge graph + AI."
-    enabled: true
-
-  # -- Nordics AI --
-
-  - name: Lovable
-    careers_url: https://jobs.ashbyhq.com/lovable
-    scan_method: websearch
-    scan_query: 'site:jobs.ashbyhq.com/lovable'
-    notes: "Stockholm SE. AI app builder (text-to-app), 80+ open roles."
-    enabled: true
-
-  - name: Legora
-    careers_url: https://jobs.ashbyhq.com/legora
-    scan_method: websearch
-    scan_query: 'site:jobs.ashbyhq.com/legora'
-    notes: "Stockholm SE / NYC / London. AI-native legal workspace."
-    enabled: true
-
-  - name: Spotify
-    careers_url: https://jobs.lever.co/spotify
-    notes: "Stockholm SE / NYC / London. Audio platform, large ML/personalization org."
-    enabled: true
-
-  - name: Vinted
-    careers_url: https://jobs.lever.co/vinted
-    notes: "Vilnius LT / Berlin. C2C marketplace unicorn, data science & ML roles."
-    enabled: true
-
-  # -- Iberia AI --
-
-  - name: Amplemarket
-    careers_url: https://job-boards.greenhouse.io/amplemarket
-    api: https://boards-api.greenhouse.io/v1/boards/amplemarket/jobs
-    notes: "Lisbon PT / Remote. AI-native sales platform."
-    enabled: true
-
-  # -- AI / Developer Tools --
-
-  - name: Perplexity
-    careers_url: https://jobs.ashbyhq.com/perplexity
-    scan_method: websearch
-    scan_query: ‘site:jobs.ashbyhq.com/perplexity "AI" OR "Applied AI" OR "Forward Deployed" OR "Engineer"’
-    notes: "AI-native search and enterprise AI platform."
-    enabled: true
-
-  - name: Clay Labs
-    careers_url: https://jobs.ashbyhq.com/claylabs
-    scan_method: websearch
-    scan_query: 'site:jobs.ashbyhq.com/claylabs "AI" OR "Developer Experience" OR "Growth" OR "Engineer"'
-    notes: "AI-native GTM and workflow automation platform."
-    enabled: true
-
-  - name: Runway
-    careers_url: https://job-boards.greenhouse.io/runwayml
-    api: https://boards-api.greenhouse.io/v1/boards/runwayml/jobs
-    notes: "Generative AI video and creative tooling platform."
-    enabled: true
-
-  - name: Hightouch
-    careers_url: https://job-boards.greenhouse.io/hightouch
-    api: https://boards-api.greenhouse.io/v1/boards/hightouch/jobs
-    notes: "Data activation platform with AI agents and solutions engineering roles."
-    enabled: true
-
-  - name: WorkOS
-    careers_url: https://jobs.ashbyhq.com/workos
-    scan_method: websearch
-    scan_query: 'site:jobs.ashbyhq.com/workos "Solutions Engineer" OR "Developer Success" OR "Engineer"'
-    notes: "Developer tools and enterprise-ready auth/platform APIs."
-    enabled: true
-
-  # -- Dev Tools / AI Infra (DevRel, SA, FDE focus) --
 
   - name: Supabase
     careers_url: https://jobs.ashbyhq.com/supabase
-    scan_method: websearch
-    scan_query: 'site:jobs.ashbyhq.com/supabase'
-    notes: "Open-source Firebase alternative. Remote-first. Postgres + Auth + Storage. Strong DevRel/DX hiring."
-    enabled: true
-
-  - name: Resend
-    careers_url: https://jobs.ashbyhq.com/resend
-    scan_method: websearch
-    scan_query: 'site:jobs.ashbyhq.com/resend'
-    notes: "Email API for developers. Remote-first. DX/DevRel focused."
-    enabled: true
-
-  - name: Clerk
-    careers_url: https://jobs.ashbyhq.com/clerk
-    scan_method: websearch
-    scan_query: 'site:jobs.ashbyhq.com/clerk'
-    notes: "Auth & user management for developers. SE / TAM / PM roles."
-    enabled: true
-
-  - name: Inngest
-    careers_url: https://jobs.ashbyhq.com/inngest
-    scan_method: websearch
-    scan_query: 'site:jobs.ashbyhq.com/inngest'
-    notes: "Durable workflow engine for serverless. DX/DevRel/Engineering hiring."
+    notes: "Open-source Firebase alternative. Go services. Remote."
     enabled: true
 
   - name: PlanetScale
     careers_url: https://job-boards.greenhouse.io/planetscale
     api: https://boards-api.greenhouse.io/v1/boards/planetscale/jobs
-    notes: "Serverless MySQL platform. Customer Engineering, Engineering, Sales."
+    notes: "MySQL platform (Vitess, written in Go). Remote."
     enabled: true
 
-  - name: Zep AI
-    careers_url: https://www.getzep.com/careers
-    scan_method: websearch
-    scan_query: '"Zep" "Forward Deployed" OR "Developer Relations" OR "Founding" site:workatastartup.com OR site:getzep.com'
-    notes: "Context engineering platform for AI agents. YC W24. Lead FDE + DevRel Lead roles. US-only currently."
+  - name: Kong
+    careers_url: https://job-boards.greenhouse.io/konghq
+    api: https://boards-api.greenhouse.io/v1/boards/konghq/jobs
+    notes: "API gateway in Go. Remote."
     enabled: true
 
-  - name: Maxim AI
-    careers_url: https://www.getmaxim.ai/careers
+  # -- Remote-first companies hiring in India --
+
+  - name: Zapier
+    careers_url: https://jobs.ashbyhq.com/zapier
+    notes: "Automation. Go backend. Remote, hires globally."
+    enabled: true
+
+  - name: Twilio
+    careers_url: https://www.twilio.com/en-us/company/jobs
     scan_method: websearch
-    scan_query: '"Maxim AI" OR "getmaxim" careers "engineer" OR "product"'
-    notes: "AI evaluation and observability platform. Bangalore-based, mostly on-site."
+    scan_query: 'site:twilio.com/company/jobs "Go" OR "Golang" OR "Backend" remote'
+    notes: "Comms APIs. Go services. India office + remote."
+    enabled: true
+
+  - name: Stripe
+    careers_url: https://stripe.com/jobs/search
+    scan_method: websearch
+    scan_query: 'site:stripe.com/jobs "Go" OR "Backend Engineer" remote'
+    notes: "Payments. Go + Ruby. Remote + India."
+    enabled: true
+
+  - name: Postman
+    careers_url: https://www.postman.com/company/careers/
+    scan_method: websearch
+    scan_query: 'site:postman.com/company/careers "Go" OR "Backend" OR "Software Engineer"'
+    notes: "API platform. India offices. Go + Node."
+    enabled: true
+
+  - name: Razorpay
+    careers_url: https://razorpay.com/jobs/
+    scan_method: websearch
+    scan_query: 'site:razorpay.com/jobs "Go" OR "Golang" OR "Backend"'
+    notes: "Indian fintech. Go backend. Bangalore."
+    enabled: true
+
+  - name: Zerodha
+    careers_url: https://zerodha.com/careers
+    scan_method: websearch
+    scan_query: 'site:zerodha.com/careers'
+    notes: "Indian stock broker. Heavy Go stack."
+    enabled: true
+
+  - name: Hasura
+    careers_url: https://hasura.io/careers
+    scan_method: websearch
+    scan_query: 'site:hasura.io/careers "Go" OR "Golang" OR "Backend"'
+    notes: "GraphQL engine. Go + Haskell. Bangalore + remote."
+    enabled: true
+
+  # -- Kubernetes / CNCF ecosystem (heavily Go) --
+
+  - name: Isovalent (Cisco)
+    careers_url: https://job-boards.greenhouse.io/isovalent
+    api: https://boards-api.greenhouse.io/v1/boards/isovalent/jobs
+    notes: "Cilium/eBPF. All Go. Remote."
+    enabled: true
+
+  - name: Coder
+    careers_url: https://jobs.ashbyhq.com/coder
+    notes: "Remote dev environments. Go. Remote-first."
+    enabled: true
+
+  - name: Upbound
+    careers_url: https://job-boards.greenhouse.io/upbound
+    api: https://boards-api.greenhouse.io/v1/boards/upbound/jobs
+    notes: "Crossplane. Go + K8s. Remote."
+    enabled: true
+
+    # -- India-based companies with offices in MP / Gujarat / Nagpur / Jaipur --
+
+  - name: GlobalLogic (Indore)
+    careers_url: https://www.globallogic.com/careers/
+    scan_method: websearch
+    scan_query: 'site:globallogic.com/careers "Go" OR "Golang" OR "Backend" "Indore"'
+    notes: "Engineering services. Strong Go presence. Indore office."
+    enabled: true
+
+  - name: Nagarro (Nagpur / Indore)
+    careers_url: https://www.nagarro.com/en/careers
+    scan_method: websearch
+    scan_query: 'site:nagarro.com/en/careers "Go" OR "Backend" OR "Golang" "Nagpur" OR "Indore"'
+    notes: "Software engineering. Multiple India offices."
+    enabled: true
+
+  - name: Jio Platforms (Gujarat / Jaipur)
+    careers_url: https://jobs.jio.com
+    scan_method: websearch
+    scan_query: 'site:jobs.jio.com "Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer"'
+    notes: "Reliance Jio. Large Go/backend teams. Offices across India."
+    enabled: true
+
+  - name: Infosys BPM (Jaipur / Nagpur)
+    careers_url: https://career.infosys.com/joblist
+    scan_method: websearch
+    scan_query: 'site:career.infosys.com "Golang" OR "Backend" OR "Go Developer" "Jaipur" OR "Nagpur" OR "Indore" OR "Ahmedabad"'
+    notes: "Large IT services. Offices in all target cities."
+    enabled: true
+
+  - name: Capgemini India (Ahmedabad / Jaipur)
+    careers_url: https://www.capgemini.com/in-en/careers/
+    scan_method: websearch
+    scan_query: 'site:capgemini.com/in-en "Golang" OR "Go Engineer" OR "Backend" "Ahmedabad" OR "Jaipur"'
+    notes: "IT services. Ahmedabad and Jaipur offices."
+    enabled: true
+
+  - name: Persistent Systems (Nagpur / Pune)
+    careers_url: https://job-boards.greenhouse.io/persistentsystems
+    api: https://boards-api.greenhouse.io/v1/boards/persistentsystems/jobs
+    notes: "Nagpur HQ. Strong engineering culture. Go backend roles."
+    enabled: true
+
+  - name: CRED (Bengaluru — remote open to India)
+    careers_url: https://careers.cred.club
+    scan_method: websearch
+    scan_query: 'site:careers.cred.club "Go" OR "Golang" OR "Backend"'
+    notes: "Fintech. Heavy Go. Remote-friendly roles."
+    enabled: true
+
+  - name: Groww (Bengaluru — remote open to India)
+    careers_url: https://groww.in/open-positions
+    scan_method: websearch
+    scan_query: 'site:groww.in/open-positions "Go" OR "Golang" OR "Backend Engineer"'
+    notes: "Investment platform. Go backend. Remote options."
+    enabled: true
+
+  - name: PhonePe (Bengaluru — remote open to India)
+    careers_url: https://careers.phonepe.com
+    scan_method: websearch
+    scan_query: 'site:careers.phonepe.com "Go" OR "Golang" OR "Backend"'
+    notes: "Payments. Go services. Remote within India."
+    enabled: true
+
+  - name: Juspay (Bengaluru — remote open to India)
+    careers_url: https://juspay.in/careers
+    scan_method: websearch
+    scan_query: 'site:juspay.in/careers "Go" OR "Backend" OR "Platform"'
+    notes: "Payment infra. Go + Haskell. Remote-friendly."
+    enabled: true
+
+    # -- YC-backed companies (Go-heavy, remote-friendly) --
+
+  - name: Render
+    careers_url: https://jobs.ashbyhq.com/render
+    notes: "Cloud platform. Go + Rust. YC W19. Remote."
+    enabled: true
+
+  - name: Neon (Serverless Postgres)
+    careers_url: https://jobs.ashbyhq.com/neon
+    notes: "Serverless Postgres. Go backend. YC S21. Remote-first."
+    enabled: true
+
+  - name: Cal.com
+    careers_url: https://job-boards.greenhouse.io/calcom
+    api: https://boards-api.greenhouse.io/v1/boards/calcom/jobs
+    notes: "Open-source scheduling. Go + TypeScript. YC. Remote."
+    enabled: true
+
+  - name: Dagger
+    careers_url: https://jobs.ashbyhq.com/dagger
+    notes: "CI/CD engine written in Go. YC-backed. Remote."
+    enabled: true
+
+  - name: Modal Labs
+    careers_url: https://jobs.ashbyhq.com/modal-labs
+    notes: "Serverless GPU infra. Go backend. YC. Remote."
+    enabled: true
+
+  - name: Turso (ChiselStrike)
+    careers_url: https://jobs.ashbyhq.com/turso
+    notes: "SQLite for edge. Go + Rust. YC. Remote."
+    enabled: true
+
+  - name: Clerk
+    careers_url: https://job-boards.greenhouse.io/clerk
+    api: https://boards-api.greenhouse.io/v1/boards/clerk/jobs
+    notes: "Auth infrastructure. Go services. YC S21. Remote."
+    enabled: true
+
+  - name: Infisical
+    careers_url: https://jobs.ashbyhq.com/infisical
+    notes: "Open-source secrets manager in Go. YC W23. Remote."
+    enabled: true
+
+  - name: Zitadel
+    careers_url: https://jobs.ashbyhq.com/zitadel
+    notes: "Open-source IAM/auth in Go. Remote."
+    enabled: true
+
+  - name: Encore
+    careers_url: https://jobs.ashbyhq.com/encore
+    notes: "Go backend framework + platform. Remote."
+    enabled: true
+
+  # -- India product companies (strong Go teams) --
+
+  - name: Meesho
+    careers_url: https://meesho.io/jobs
+    scan_method: websearch
+    scan_query: 'site:meesho.io/jobs "Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer"'
+    notes: "Social commerce. Go backend. Bangalore. Remote-friendly."
+    enabled: true
+
+  - name: BrowserStack
+    careers_url: https://www.browserstack.com/careers
+    scan_method: websearch
+    scan_query: 'site:browserstack.com/careers "Go" OR "Golang" OR "Backend Engineer" OR "Platform"'
+    notes: "Test infra. Go backend. Mumbai + remote."
+    enabled: true
+
+  - name: Freshworks
+    careers_url: https://job-boards.greenhouse.io/freshworks
+    api: https://boards-api.greenhouse.io/v1/boards/freshworks/jobs
+    notes: "SaaS CRM/helpdesk. Go services. Chennai + Bangalore + remote."
+    enabled: true
+
+  - name: Chargebee
+    careers_url: https://jobs.lever.co/chargebee
+    notes: "Subscription billing. Go backend. Chennai + remote."
+    enabled: true
+
+  - name: Zoho (Recruit board)
+    careers_url: https://careers.zohocorp.com
+    scan_method: websearch
+    scan_query: 'site:careers.zohocorp.com "Go" OR "Golang" OR "Backend" OR "Software Engineer"'
+    notes: "Large SaaS. Go teams. Chennai + Bangalore."
+    enabled: true
+
+  - name: Setu (Pine Labs)
+    careers_url: https://jobs.lever.co/setu
+    notes: "Fintech APIs. Go backend. Bangalore + remote."
+    enabled: true
+
+  - name: Decentro
+    careers_url: https://jobs.lever.co/decentro
+    notes: "Banking APIs. Go microservices. Bangalore + remote."
+    enabled: true
+
+  - name: Eka.care
+    careers_url: https://jobs.lever.co/eka-care
+    notes: "Health-tech. Go backend. Bangalore + remote."
+    enabled: true
+
+  # -- Global remote-first (strong India hiring record) --
+
+  - name: Remote.com
+    careers_url: https://job-boards.greenhouse.io/remotecom
+    api: https://boards-api.greenhouse.io/v1/boards/remotecom/jobs
+    notes: "HR platform. Go backend. All-remote, hires in India."
+    enabled: true
+
+  - name: Deel
+    careers_url: https://jobs.ashbyhq.com/deel
+    notes: "HR/payroll. Go backend. Remote-first. Hires in India."
+    enabled: true
+
+  - name: Omnipresent
+    careers_url: https://jobs.ashbyhq.com/omnipresent
+    notes: "Global employment. Go backend. Remote. India-friendly."
+    enabled: true
+
+  - name: Loom (Atlassian)
+    careers_url: https://job-boards.greenhouse.io/loom
+    api: https://boards-api.greenhouse.io/v1/boards/loom/jobs
+    notes: "Video messaging. Go backend. Remote + India."
+    enabled: true
+
+  - name: Vercel
+    careers_url: https://job-boards.greenhouse.io/vercel
+    api: https://boards-api.greenhouse.io/v1/boards/vercel/jobs
+    notes: "Frontend cloud. Go backend infra. Remote-first."
+    enabled: true
+
+  - name: PagerDuty
+    careers_url: https://job-boards.greenhouse.io/pagerduty
+    api: https://boards-api.greenhouse.io/v1/boards/pagerduty/jobs
+    notes: "Incident management. Go services. India office + remote."
+    enabled: true
+
+  - name: Percona
+    careers_url: https://jobs.ashbyhq.com/percona/?departmentId=a3456c58-9fac-45f2-bc7e-f33bca8a6ae5
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Vultr
+    careers_url: https://job-boards.greenhouse.io/vultr/?departments%5B%5D=4009958006
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: United Field Services Inc
+    careers_url: https://apply.workable.com/united-field-services-inc/
+    scan_method: websearch
+    scan_query: 'site:apply.workable.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Smart Working Solutions
+    careers_url: https://jobs.lever.co/smart-working-solutions/?team=Engineering
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Sideinc
+    careers_url: https://apply.workable.com/sideinc/
+    scan_method: websearch
+    scan_query: 'site:apply.workable.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Gohighlevel
+    careers_url: https://jobs.lever.co/gohighlevel/?department=Dev
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Stickermule
+    careers_url: https://jobs.ashbyhq.com/stickermule/?departmentId=e639e322-1c65-4ead-98b4-fd9f9491d82c
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Deel
+    careers_url: https://jobs.ashbyhq.com/deel/?departmentId=8c27e7fa-f898-4de1-adf6-70c67c1e1c11
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Classavo
+    careers_url: https://jobs.ashbyhq.com/classavo/?departmentId=a3525e51-60f5-4d90-a4d4-c9788c5c9269
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Coupa
+    careers_url: https://jobs.lever.co/coupa/?department=Development
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Alt
+    careers_url: https://job-boards.greenhouse.io/alt/?departments%5B%5D=4022846003
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Everai
+    careers_url: https://jobs.ashbyhq.com/everai/?departmentId=5f37da1b-b11e-421e-bfc6-6760aaa809a0
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Helius
+    careers_url: https://jobs.ashbyhq.com/helius
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Lithic
+    careers_url: https://job-boards.greenhouse.io/lithic/?departments%5B%5D=4028177004
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Bramkas
+    careers_url: https://www.bramkas.com/careers
+    scan_method: websearch
+    scan_query: 'site:bramkas.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Iflowglobal
+    careers_url: https://iflowglobal.com/careers/job-listings/
+    scan_method: websearch
+    scan_query: 'site:iflowglobal.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Sleddingtech
+    careers_url: https://sleddingtech.com/careers/
+    scan_method: websearch
+    scan_query: 'site:sleddingtech.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Spinoinc
+    careers_url: https://spinoinc.com/careers-in-spino/
+    scan_method: websearch
+    scan_query: 'site:spinoinc.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Careers Infraveo
+    careers_url: https://careers.infraveo.com/jobs/Careers
+    scan_method: websearch
+    scan_query: 'site:careers.infraveo.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Adalat
+    careers_url: https://www.adalat.ai/careers#join-us
+    scan_method: websearch
+    scan_query: 'site:adalat.ai ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Sadhanaitsolutions
+    careers_url: https://sadhanaitsolutions.com/we-are-iring/
+    scan_method: websearch
+    scan_query: 'site:sadhanaitsolutions.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Iraje
+    careers_url: https://iraje.com/career.aspx
+    scan_method: websearch
+    scan_query: 'site:iraje.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Appwrite
+    careers_url: https://www.appwrite.careers/
+    scan_method: websearch
+    scan_query: 'site:appwrite.careers ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: SigNoz
+    careers_url: https://jobs.ashbyhq.com/SigNoz
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Explore Jobs Ciklum
+    careers_url: https://explore-jobs.ciklum.com/en/sites/ciklum-career/jobs?lastSelectedFacet=WORK_LOCATIONS&selectedLocationsFacet=300000000468243&selectedWorkLocationsFacet=300000005222804
+    scan_method: websearch
+    scan_query: 'site:explore-jobs.ciklum.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Golangprojects
+    careers_url: https://www.golangprojects.com/golang-remote-jobs.html
+    scan_method: websearch
+    scan_query: 'site:golangprojects.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Bloomscouts
+    careers_url: https://bloomscouts.com/job-seekers
+    scan_method: websearch
+    scan_query: 'site:bloomscouts.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: JFrog
+    careers_url: https://boards.greenhouse.io/embed/job_board?for=jfrog
+    scan_method: websearch
+    scan_query: 'site:boards.greenhouse.io ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Databricks
+    careers_url: https://www.databricks.com/company/careers/open-positions
+    scan_method: websearch
+    scan_query: 'site:databricks.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Rippling
+    careers_url: https://www.linkedin.com/company/rippling/jobs/
+    scan_method: websearch
+    scan_query: 'site:linkedin.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Pigment
+    careers_url: https://jobs.lever.co/pigment
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: 1password
+    careers_url: https://jobs.ashbyhq.com/1password
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Snowflake Computing
+    careers_url: https://www.linkedin.com/company/snowflake-computing/jobs/
+    scan_method: websearch
+    scan_query: 'site:linkedin.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: ClickUp
+    careers_url: https://clickup.com/careers
+    scan_method: websearch
+    scan_query: 'site:clickup.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Canonical
+    careers_url: https://boards.greenhouse.io/embed/job_board?for=canonical
+    scan_method: websearch
+    scan_query: 'site:boards.greenhouse.io ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Crowdstrike Wd5 Myworkdayjobs
+    careers_url: https://crowdstrike.wd5.myworkdayjobs.com/crowdstrikecareers
+    scan_method: websearch
+    scan_query: 'site:crowdstrike.wd5.myworkdayjobs.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Lightspeedhq
+    careers_url: https://www.lightspeedhq.com/careers/openings/?
+    scan_method: websearch
+    scan_query: 'site:lightspeedhq.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Genesys Wd1 Myworkdayjobs
+    careers_url: https://genesys.wd1.myworkdayjobs.com/Genesys
+    scan_method: websearch
+    scan_query: 'site:genesys.wd1.myworkdayjobs.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Jobs Jobvite
+    careers_url: https://jobs.jobvite.com/nutanix
+    scan_method: websearch
+    scan_query: 'site:jobs.jobvite.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Pendo
+    careers_url: https://job-boards.greenhouse.io/pendo
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Redisinc
+    careers_url: https://www.linkedin.com/company/redisinc/jobs/
+    scan_method: websearch
+    scan_query: 'site:linkedin.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Datadog
+    careers_url: https://boards.greenhouse.io/embed/job_board?for=datadog
+    scan_method: websearch
+    scan_query: 'site:boards.greenhouse.io ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Confluent
+    careers_url: https://jobs.ashbyhq.com/confluent
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Figma
+    careers_url: https://www.figma.com/careers/
+    scan_method: websearch
+    scan_query: 'site:figma.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Sumologic
+    careers_url: https://www.sumologic.com/company/careers
+    scan_method: websearch
+    scan_query: 'site:sumologic.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: FloQast
+    careers_url: https://jobs.lever.co/floqast
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Alpha Sense
+    careers_url: https://www.alpha-sense.com/careers/
+    scan_method: websearch
+    scan_query: 'site:alpha-sense.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Vastdata
+    careers_url: https://www.vastdata.com/careers
+    scan_method: websearch
+    scan_query: 'site:vastdata.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Cvent
+    careers_url: https://www.linkedin.com/company/cvent/jobs/
+    scan_method: websearch
+    scan_query: 'site:linkedin.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Jumpcloud
+    careers_url: https://jobs.lever.co/jumpcloud
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Netskope
+    careers_url: https://boards.greenhouse.io/embed/job_board?for=netskope
+    scan_method: websearch
+    scan_query: 'site:boards.greenhouse.io ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Workato
+    careers_url: https://job-boards.greenhouse.io/workato
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Autodesk Wd1 Myworkdayjobs
+    careers_url: https://autodesk.wd1.myworkdayjobs.com/Ext
+    scan_method: websearch
+    scan_query: 'site:autodesk.wd1.myworkdayjobs.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Logicmonitor
+    careers_url: https://www.logicmonitor.com/careers
+    scan_method: websearch
+    scan_query: 'site:logicmonitor.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Sonatype
+    careers_url: https://www.sonatype.com/company/careers
+    scan_method: websearch
+    scan_query: 'site:sonatype.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Wrike
+    careers_url: https://www.wrike.com/jobs/
+    scan_method: websearch
+    scan_query: 'site:wrike.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Dataiku
+    careers_url: https://www.dataiku.com/company/careers/
+    scan_method: websearch
+    scan_query: 'site:dataiku.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Notion
+    careers_url: https://www.notion.com/careers
+    scan_method: websearch
+    scan_query: 'site:notion.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Slack
+    careers_url: https://slack.com/intl/en-in/careers
+    scan_method: websearch
+    scan_query: 'site:slack.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Moveworks
+    careers_url: https://www.moveworks.com/us/en/company/careers
+    scan_method: websearch
+    scan_query: 'site:moveworks.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Braze
+    careers_url: https://www.braze.com/company/careers
+    scan_method: websearch
+    scan_query: 'site:braze.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Aircall
+    careers_url: https://jobs.lever.co/aircall
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Opengov
+    careers_url: https://opengov.com/careers/
+    scan_method: websearch
+    scan_query: 'site:opengov.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Jamf
+    careers_url: https://www.jamf.com/about/careers/jobs/
+    scan_method: websearch
+    scan_query: 'site:jamf.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Rippling
+    careers_url: https://www.rippling.com/careers
+    scan_method: websearch
+    scan_query: 'site:rippling.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Crowdstrike
+    careers_url: https://www.crowdstrike.com/en-us/careers/
+    scan_method: websearch
+    scan_query: 'site:crowdstrike.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Talent Bairesdev
+    careers_url: https://talent.bairesdev.com/
+    scan_method: websearch
+    scan_query: 'site:talent.bairesdev.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Ironcladhq
+    careers_url: https://jobs.ashbyhq.com/ironcladhq
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Calendly
+    careers_url: https://calendly.com/careers
+    scan_method: websearch
+    scan_query: 'site:calendly.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Stripe
+    careers_url: https://boards.greenhouse.io/embed/job_board?for=stripe
+    scan_method: websearch
+    scan_query: 'site:boards.greenhouse.io ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Benchling
+    careers_url: https://boards.greenhouse.io/embed/job_board?for=benchling
+    scan_method: websearch
+    scan_query: 'site:boards.greenhouse.io ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Toast
+    careers_url: https://boards.greenhouse.io/embed/job_board?for=toast
+    scan_method: websearch
+    scan_query: 'site:boards.greenhouse.io ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Smartbear
+    careers_url: https://smartbear.com/company/careers/
+    scan_method: websearch
+    scan_query: 'site:smartbear.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Suse
+    careers_url: https://www.linkedin.com/company/suse/jobs/
+    scan_method: websearch
+    scan_query: 'site:linkedin.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Flexerasoftware Wd1 Myworkdayjobs
+    careers_url: https://flexerasoftware.wd1.myworkdayjobs.com/FlexeraSoftware
+    scan_method: websearch
+    scan_query: 'site:flexerasoftware.wd1.myworkdayjobs.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Snofox
+    careers_url: https://www.snofox.com/join-the-team
+    scan_method: websearch
+    scan_query: 'site:snofox.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Numa Stays
+    careers_url: https://www.linkedin.com/company/numa-stays/jobs/
+    scan_method: websearch
+    scan_query: 'site:linkedin.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Rivian And Vw Group Technologies
+    careers_url: https://www.linkedin.com/company/rivian-and-vw-group-technologies/jobs/
+    scan_method: websearch
+    scan_query: 'site:linkedin.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Midnightmansion
+    careers_url: https://www.midnightmansion.com/careers
+    scan_method: websearch
+    scan_query: 'site:midnightmansion.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Relevant
+    careers_url: https://relevant.healthcare/jobs/
+    scan_method: websearch
+    scan_query: 'site:relevant.healthcare ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Trustmachines
+    careers_url: https://trustmachines.co/careers/
+    scan_method: websearch
+    scan_query: 'site:trustmachines.co ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Ocp
+    careers_url: https://www.ocp.gg/jobs
+    scan_method: websearch
+    scan_query: 'site:ocp.gg ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Numeris
+    careers_url: https://jobs.lever.co/numeris
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Aisera
+    careers_url: https://www.linkedin.com/company/aisera/jobs/
+    scan_method: websearch
+    scan_query: 'site:linkedin.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Recordedfuture
+    careers_url: https://boards.greenhouse.io/embed/job_board?for=recordedfuture
+    scan_method: websearch
+    scan_query: 'site:boards.greenhouse.io ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Nice Systems
+    careers_url: https://www.linkedin.com/company/nice-systems/jobs/
+    scan_method: websearch
+    scan_query: 'site:linkedin.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Insightsoftware
+    careers_url: https://insightsoftware.com/careers/
+    scan_method: websearch
+    scan_query: 'site:insightsoftware.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Pingcap
+    careers_url: https://job-boards.greenhouse.io/pingcap
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Crossbeam
+    careers_url: https://job-boards.greenhouse.io/crossbeam
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Jobs Paloaltonetworks
+    careers_url: https://jobs.paloaltonetworks.com/en
+    scan_method: websearch
+    scan_query: 'site:jobs.paloaltonetworks.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Podium
+    careers_url: https://www.linkedin.com/company/podium/jobs/
+    scan_method: websearch
+    scan_query: 'site:linkedin.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Kinaxis
+    careers_url: https://www.linkedin.com/company/kinaxis/jobs/
+    scan_method: websearch
+    scan_query: 'site:linkedin.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Blackbaud Wd1 Myworkdayjobs
+    careers_url: https://blackbaud.wd1.myworkdayjobs.com/en-US/ExternalCareers
+    scan_method: websearch
+    scan_query: 'site:blackbaud.wd1.myworkdayjobs.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Redhat Wd5 Myworkdayjobs
+    careers_url: https://redhat.wd5.myworkdayjobs.com/jobs
+    scan_method: websearch
+    scan_query: 'site:redhat.wd5.myworkdayjobs.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Ziphq
+    careers_url: https://ziphq.com/careers
+    scan_method: websearch
+    scan_query: 'site:ziphq.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Starrez
+    careers_url: https://starrez.com/company/careers
+    scan_method: websearch
+    scan_query: 'site:starrez.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Lifeatvena
+    careers_url: https://lifeatvena.com/jobs
+    scan_method: websearch
+    scan_query: 'site:lifeatvena.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Shopify
+    careers_url: https://shopify.com/careers
+    scan_method: websearch
+    scan_query: 'site:shopify.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Hightouch
+    careers_url: https://hightouch.com/careers
+    scan_method: websearch
+    scan_query: 'site:hightouch.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Celigo
+    careers_url: https://www.celigo.com/careers/
+    scan_method: websearch
+    scan_query: 'site:celigo.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Canarytechnologies
+    careers_url: https://jobs.lever.co/canarytechnologies
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Servicenow
+    careers_url: https://www.linkedin.com/company/servicenow/jobs/
+    scan_method: websearch
+    scan_query: 'site:linkedin.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Saucelabs
+    careers_url: https://boards.greenhouse.io/embed/job_board?for=saucelabs
+    scan_method: websearch
+    scan_query: 'site:boards.greenhouse.io ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Fleetio
+    careers_url: https://www.linkedin.com/company/fleetio/jobs/
+    scan_method: websearch
+    scan_query: 'site:linkedin.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Bamboohr
+    careers_url: https://www.linkedin.com/company/bamboohr/jobs/
+    scan_method: websearch
+    scan_query: 'site:linkedin.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Walkme
+    careers_url: https://www.linkedin.com/company/walkme/jobs/
+    scan_method: websearch
+    scan_query: 'site:linkedin.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Athenahealth Wd1 Myworkdayjobs
+    careers_url: https://athenahealth.wd1.myworkdayjobs.com/en-US/External
+    scan_method: websearch
+    scan_query: 'site:athenahealth.wd1.myworkdayjobs.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Logicgate
+    careers_url: https://job-boards.greenhouse.io/logicgate
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Tsys Wd1 Myworkdayjobs
+    careers_url: https://tsys.wd1.myworkdayjobs.com/en-US/TSYS
+    scan_method: websearch
+    scan_query: 'site:tsys.wd1.myworkdayjobs.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Lodgify
+    careers_url: https://jobs.lever.co/lodgify
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Cisco
+    careers_url: https://www.linkedin.com/company/cisco/jobs/
+    scan_method: websearch
+    scan_query: 'site:linkedin.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Descript
+    careers_url: https://www.descript.com/careers
+    scan_method: websearch
+    scan_query: 'site:descript.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Livechatinc
+    careers_url: https://jobs.lever.co/livechatinc
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Flowcode Qr
+    careers_url: https://www.linkedin.com/company/flowcode-qr/jobs/
+    scan_method: websearch
+    scan_query: 'site:linkedin.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Abridge
+    careers_url: https://jobs.ashbyhq.com/Abridge
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Ashbyhq
+    careers_url: https://www.ashbyhq.com/careers
+    scan_method: websearch
+    scan_query: 'site:ashbyhq.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Grammarly
+    careers_url: https://www.grammarly.com/careers/jobs
+    scan_method: websearch
+    scan_query: 'site:grammarly.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Amplitude
+    careers_url: https://job-boards.greenhouse.io/amplitude
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Careers Constructconnect Icims
+    careers_url: https://careers-constructconnect.icims.com/jobs/search?ss=1&mobile=false&width=1019&height=500&bga=true&needsRedirect=false&jan1offset=-420&jun1offset=-420
+    scan_method: websearch
+    scan_query: 'site:careers-constructconnect.icims.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Careers Here Icims
+    careers_url: https://careers-here.icims.com/jobs/search?ss=1&mobile=false&width=1019&height=500&bga=true&needsRedirect=false&jan1offset=-480&jun1offset=-420
+    scan_method: websearch
+    scan_query: 'site:careers-here.icims.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Interfaceai
+    careers_url: https://job-boards.greenhouse.io/interfaceai
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Dbtlabsinc
+    careers_url: https://job-boards.greenhouse.io/dbtlabsinc
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Customer
+    careers_url: https://customer.io/careers
+    scan_method: websearch
+    scan_query: 'site:customer.io ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Ripple
+    careers_url: https://boards.greenhouse.io/embed/job_board?for=ripple
+    scan_method: websearch
+    scan_query: 'site:boards.greenhouse.io ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Vantage
+    careers_url: https://www.vantage.sh/careers
+    scan_method: websearch
+    scan_query: 'site:vantage.sh ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Nexhealth
+    careers_url: https://boards.greenhouse.io/embed/job_board?for=nexhealth
+    scan_method: websearch
+    scan_query: 'site:boards.greenhouse.io ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Yext
+    careers_url: https://www.yext.com/careers/open-positions
+    scan_method: websearch
+    scan_query: 'site:yext.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Varicent
+    careers_url: https://www.varicent.com/company/careers
+    scan_method: websearch
+    scan_query: 'site:varicent.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Wiz
+    careers_url: https://www.wiz.io/careers
+    scan_method: websearch
+    scan_query: 'site:wiz.io ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Elastic
+    careers_url: https://boards.greenhouse.io/embed/job_board?for=elastic
+    scan_method: websearch
+    scan_query: 'site:boards.greenhouse.io ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Careers Cloudsmith
+    careers_url: https://careers.cloudsmith.com/
+    scan_method: websearch
+    scan_query: 'site:careers.cloudsmith.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Asapp 2
+    careers_url: https://jobs.lever.co/asapp-2
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Bb Wd3 Myworkdayjobs
+    careers_url: https://bb.wd3.myworkdayjobs.com/BlackBerry
+    scan_method: websearch
+    scan_query: 'site:bb.wd3.myworkdayjobs.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Quo
+    careers_url: https://www.quo.com/careers
+    scan_method: websearch
+    scan_query: 'site:quo.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Intapp Wd1 Myworkdayjobs
+    careers_url: https://intapp.wd1.myworkdayjobs.com/Intapp
+    scan_method: websearch
+    scan_query: 'site:intapp.wd1.myworkdayjobs.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Checkr
+    careers_url: https://checkr.com/company/careers/open-careers
+    scan_method: websearch
+    scan_query: 'site:checkr.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Zoominfo
+    careers_url: https://www.zoominfo.com/careers
+    scan_method: websearch
+    scan_query: 'site:zoominfo.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Siriusxm
+    careers_url: https://www.linkedin.com/company/siriusxm/jobs/
+    scan_method: websearch
+    scan_query: 'site:linkedin.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Highlightta
+    careers_url: https://jobs.ashbyhq.com/HighlightTA
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Fareharbor
+    careers_url: https://fareharbor.com/careers/jobs/
+    scan_method: websearch
+    scan_query: 'site:fareharbor.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: 7shifts
+    careers_url: https://job-boards.greenhouse.io/7shifts
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Airbase
+    careers_url: https://www.airbase.com/careers
+    scan_method: websearch
+    scan_query: 'site:airbase.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Axon
+    careers_url: https://boards.greenhouse.io/embed/job_board?for=axon
+    scan_method: websearch
+    scan_query: 'site:boards.greenhouse.io ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Tealium Wd1 Myworkdayjobs
+    careers_url: https://tealium.wd1.myworkdayjobs.com/Careers
+    scan_method: websearch
+    scan_query: 'site:tealium.wd1.myworkdayjobs.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Watershed
+    careers_url: https://watershed.com/careers
+    scan_method: websearch
+    scan_query: 'site:watershed.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Modmed
+    careers_url: https://www.modmed.com/who-we-are/careers/
+    scan_method: websearch
+    scan_query: 'site:modmed.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Breezy
+    careers_url: https://breezy.hr/
+    scan_method: websearch
+    scan_query: 'site:breezy.hr ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Honeybook
+    careers_url: https://boards.greenhouse.io/embed/job_board?for=honeybook
+    scan_method: websearch
+    scan_query: 'site:boards.greenhouse.io ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Cority
+    careers_url: https://jobs.lever.co/cority
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Nextech
+    careers_url: https://www.linkedin.com/company/nextech/jobs/
+    scan_method: websearch
+    scan_query: 'site:linkedin.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Jobs Jobvite
+    careers_url: https://jobs.jobvite.com/varonis
+    scan_method: websearch
+    scan_query: 'site:jobs.jobvite.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Eposnow
+    careers_url: https://www.eposnow.com/us/careers/open-positions/
+    scan_method: websearch
+    scan_query: 'site:eposnow.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Mitratech
+    careers_url: https://job-boards.greenhouse.io/mitratech
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Brightwheel
+    careers_url: https://jobs.ashbyhq.com/brightwheel
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Qualified
+    careers_url: https://jobs.ashbyhq.com/qualified
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Springhealth
+    careers_url: https://www.springhealth.com/open-roles
+    scan_method: websearch
+    scan_query: 'site:springhealth.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Tripadvisor
+    careers_url: https://job-boards.greenhouse.io/tripadvisor
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Stackadapt
+    careers_url: https://job-boards.greenhouse.io/stackadapt
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Gorgias
+    careers_url: https://jobs.ashbyhq.com/gorgias
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Commure
+    careers_url: https://jobs.ashbyhq.com/Commure
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Palantir Technologies
+    careers_url: https://www.linkedin.com/company/palantir-technologies/jobs/
+    scan_method: websearch
+    scan_query: 'site:linkedin.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Evenup
+    careers_url: https://jobs.ashbyhq.com/evenup
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Owner
+    careers_url: https://jobs.lever.co/owner
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Amplemarket
+    careers_url: https://www.amplemarket.com/careers
+    scan_method: websearch
+    scan_query: 'site:amplemarket.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Ambient
+    careers_url: https://www.ambient.ai/careers
+    scan_method: websearch
+    scan_query: 'site:ambient.ai ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Tcpsoftware
+    careers_url: https://www.linkedin.com/company/tcpsoftware/jobs/
+    scan_method: websearch
+    scan_query: 'site:linkedin.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Lumos
+    careers_url: https://job-boards.greenhouse.io/lumos
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Bitwarden
+    careers_url: https://bitwarden.com/careers/
+    scan_method: websearch
+    scan_query: 'site:bitwarden.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: WorkOS
+    careers_url: https://jobs.lever.co/workos
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Ycombinator
+    careers_url: https://www.ycombinator.com/companies/veryfi-inc/jobs
+    scan_method: websearch
+    scan_query: 'site:ycombinator.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Jobs Thermofisher
+    careers_url: https://jobs.thermofisher.com/global/en/search-results
+    scan_method: websearch
+    scan_query: 'site:jobs.thermofisher.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Veeva Systems
+    careers_url: https://www.linkedin.com/company/veeva-systems/jobs/
+    scan_method: websearch
+    scan_query: 'site:linkedin.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Jobs Grainger
+    careers_url: https://jobs.grainger.com/go/View-All-Jobs/8082000
+    scan_method: websearch
+    scan_query: 'site:jobs.grainger.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Playstation
+    careers_url: https://www.playstation.com/he-il/corporate/playstation-careers/
+    scan_method: websearch
+    scan_query: 'site:playstation.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Prompthealth
+    careers_url: https://www.prompthealth.com/careers
+    scan_method: websearch
+    scan_query: 'site:prompthealth.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Birdie
+    careers_url: https://jobs.ashbyhq.com/birdie
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Logixboard
+    careers_url: https://logixboard.com/careers
+    scan_method: websearch
+    scan_query: 'site:logixboard.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Regrow
+    careers_url: https://www.regrow.ag/careers
+    scan_method: websearch
+    scan_query: 'site:regrow.ag ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Loftorbital
+    careers_url: https://jobs.lever.co/loftorbital
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Lithic
+    careers_url: https://job-boards.greenhouse.io/lithic
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Sandboxaq
+    careers_url: https://www.sandboxaq.com/careers-list
+    scan_method: websearch
+    scan_query: 'site:sandboxaq.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Parcellab
+    careers_url: https://www.linkedin.com/company/parcellab/jobs/
+    scan_method: websearch
+    scan_query: 'site:linkedin.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Eagleview Technologies Inc
+    careers_url: https://www.linkedin.com/company/eagleview-technologies-inc/jobs/
+    scan_method: websearch
+    scan_query: 'site:linkedin.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Pax8inc Wd12 Myworkdayjobs
+    careers_url: https://pax8inc.wd12.myworkdayjobs.com/en-US/Pax8Careers
+    scan_method: websearch
+    scan_query: 'site:pax8inc.wd12.myworkdayjobs.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Aurorasolar
+    careers_url: https://jobs.ashbyhq.com/aurorasolar
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Dynatrace
+    careers_url: https://www.linkedin.com/company/dynatrace/jobs/
+    scan_method: websearch
+    scan_query: 'site:linkedin.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Roblox
+    careers_url: https://boards.greenhouse.io/embed/job_board?for=roblox
+    scan_method: websearch
+    scan_query: 'site:boards.greenhouse.io ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Audioeye
+    careers_url: https://www.audioeye.com/careers/
+    scan_method: websearch
+    scan_query: 'site:audioeye.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Orum
+    careers_url: https://jobs.ashbyhq.com/orum
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Navan
+    careers_url: https://www.linkedin.com/company/navan/jobs/
+    scan_method: websearch
+    scan_query: 'site:linkedin.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Affirm
+    careers_url: https://www.affirm.com/careers
+    scan_method: websearch
+    scan_query: 'site:affirm.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Goodleap
+    careers_url: https://www.linkedin.com/company/goodleap/jobs/
+    scan_method: websearch
+    scan_query: 'site:linkedin.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Mavenclinic
+    careers_url: https://www.mavenclinic.com/careers
+    scan_method: websearch
+    scan_query: 'site:mavenclinic.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Bigcommerce Wd12 Myworkdayjobs
+    careers_url: https://bigcommerce.wd12.myworkdayjobs.com/Commerce
+    scan_method: websearch
+    scan_query: 'site:bigcommerce.wd12.myworkdayjobs.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Sprout Social Inc
+    careers_url: https://www.linkedin.com/company/sprout-social-inc-/jobs/
+    scan_method: websearch
+    scan_query: 'site:linkedin.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Partstech
+    careers_url: https://partstech.com/careers/
+    scan_method: websearch
+    scan_query: 'site:partstech.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Open Systems
+    careers_url: https://www.open-systems.com/careers/
+    scan_method: websearch
+    scan_query: 'site:open-systems.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Careers Materialbank
+    careers_url: https://careers.materialbank.com/careers
+    scan_method: websearch
+    scan_query: 'site:careers.materialbank.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Juniper Networks
+    careers_url: https://www.linkedin.com/company/juniper-networks/jobs/
+    scan_method: websearch
+    scan_query: 'site:linkedin.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Wandb
+    careers_url: https://www.linkedin.com/company/wandb/jobs/
+    scan_method: websearch
+    scan_query: 'site:linkedin.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Cointracker
+    careers_url: https://jobs.ashbyhq.com/cointracker
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Novidea Software
+    careers_url: https://www.linkedin.com/company/novidea-software/jobs/
+    scan_method: websearch
+    scan_query: 'site:linkedin.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Muckrack
+    careers_url: https://muckrack.com/careers
+    scan_method: websearch
+    scan_query: 'site:muckrack.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Zscaler
+    careers_url: https://www.linkedin.com/company/zscaler/jobs/
+    scan_method: websearch
+    scan_query: 'site:linkedin.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Thanx
+    careers_url: https://job-boards.greenhouse.io/thanx
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Couchbase
+    careers_url: https://www.couchbase.com/careers/
+    scan_method: websearch
+    scan_query: 'site:couchbase.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Exodigo
+    careers_url: https://www.linkedin.com/company/exodigo/jobs/
+    scan_method: websearch
+    scan_query: 'site:linkedin.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Sonrai Security
+    careers_url: https://jobs.lever.co/sonrai-security
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Amazeanywhere
+    careers_url: https://www.linkedin.com/company/amazeanywhere/jobs/
+    scan_method: websearch
+    scan_query: 'site:linkedin.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: The Trade Desk
+    careers_url: https://www.linkedin.com/company/the-trade-desk/jobs/
+    scan_method: websearch
+    scan_query: 'site:linkedin.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Steer
+    careers_url: https://steer.io/careers
+    scan_method: websearch
+    scan_query: 'site:steer.io ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Aes Wd1 Myworkdayjobs
+    careers_url: https://aes.wd1.myworkdayjobs.com/en-US/AES_US
+    scan_method: websearch
+    scan_query: 'site:aes.wd1.myworkdayjobs.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Linushealth
+    careers_url: https://job-boards.greenhouse.io/linushealth
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Igt
+    careers_url: https://www.linkedin.com/company/igt/jobs/
+    scan_method: websearch
+    scan_query: 'site:linkedin.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Newfront
+    careers_url: https://www.newfront.com/careers
+    scan_method: websearch
+    scan_query: 'site:newfront.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Immutable
+    careers_url: https://jobs.lever.co/immutable
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Futurefit
+    careers_url: https://www.futurefit.ai/careers
+    scan_method: websearch
+    scan_query: 'site:futurefit.ai ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Paper Wd3 Myworkdayjobs
+    careers_url: https://paper.wd3.myworkdayjobs.com/Paper_Careers
+    scan_method: websearch
+    scan_query: 'site:paper.wd3.myworkdayjobs.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Ebay
+    careers_url: https://www.linkedin.com/company/ebay/jobs/
+    scan_method: websearch
+    scan_query: 'site:linkedin.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Budderfly
+    careers_url: https://boards.greenhouse.io/embed/job_board?for=budderfly
+    scan_method: websearch
+    scan_query: 'site:boards.greenhouse.io ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Fundapps
+    careers_url: https://www.linkedin.com/company/fundapps/jobs/
+    scan_method: websearch
+    scan_query: 'site:linkedin.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Geoforce
+    careers_url: https://jobs.ashbyhq.com/Geoforce
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Careers Archimedesfi
+    careers_url: https://careers.archimedesfi.com/
+    scan_method: websearch
+    scan_query: 'site:careers.archimedesfi.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Sayvasolutions
+    careers_url: https://sayvasolutions.com/full-time-jobs/
+    scan_method: websearch
+    scan_query: 'site:sayvasolutions.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Talentekbyhubtek
+    careers_url: https://www.linkedin.com/company/talentekbyhubtek/jobs/
+    scan_method: websearch
+    scan_query: 'site:linkedin.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Atomicvest
+    careers_url: https://www.atomicvest.com/careers
+    scan_method: websearch
+    scan_query: 'site:atomicvest.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Revenueanalytics
+    careers_url: https://jobs.lever.co/revenueanalytics
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Datavant
+    careers_url: https://www.linkedin.com/company/datavant/jobs/
+    scan_method: websearch
+    scan_query: 'site:linkedin.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Teamworx Security
+    careers_url: https://www.linkedin.com/company/teamworx-security/jobs/
+    scan_method: websearch
+    scan_query: 'site:linkedin.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Reaktor
+    careers_url: https://www.linkedin.com/company/reaktor_/jobs/
+    scan_method: websearch
+    scan_query: 'site:linkedin.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Slickdeals
+    careers_url: https://slickdeals.net/corp/careers.html
+    scan_method: websearch
+    scan_query: 'site:slickdeals.net ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Resq
+    careers_url: https://jobs.ashbyhq.com/resq
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Smartcar
+    careers_url: https://www.linkedin.com/company/smartcar/jobs/
+    scan_method: websearch
+    scan_query: 'site:linkedin.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Cybcube
+    careers_url: https://www.cybcube.com/careers
+    scan_method: websearch
+    scan_query: 'site:cybcube.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Jackpocket
+    careers_url: https://www.linkedin.com/company/jackpocket/jobs/
+    scan_method: websearch
+    scan_query: 'site:linkedin.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Capellaspace
+    careers_url: https://www.capellaspace.com/company/careers
+    scan_method: websearch
+    scan_query: 'site:capellaspace.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Propel
+    careers_url: https://job-boards.greenhouse.io/propel
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Momence
+    careers_url: https://job-boards.greenhouse.io/momence
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Synctera
+    careers_url: https://www.synctera.com/careers
+    scan_method: websearch
+    scan_query: 'site:synctera.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Mash
+    careers_url: https://www.mash.com/careers
+    scan_method: websearch
+    scan_query: 'site:mash.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Hstk
+    careers_url: https://hstk.com/careers/
+    scan_method: websearch
+    scan_query: 'site:hstk.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Tokentransit
+    careers_url: https://tokentransit.com/company/careers
+    scan_method: websearch
+    scan_query: 'site:tokentransit.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: 3play Media
+    careers_url: https://www.linkedin.com/company/3play-media/jobs/
+    scan_method: websearch
+    scan_query: 'site:linkedin.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Papainc
+    careers_url: https://www.linkedin.com/company/papainc/jobs/
+    scan_method: websearch
+    scan_query: 'site:linkedin.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Avalabs
+    careers_url: https://job-boards.greenhouse.io/avalabs
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Getclearco
+    careers_url: https://www.linkedin.com/company/getclearco/jobs/
+    scan_method: websearch
+    scan_query: 'site:linkedin.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Binti
+    careers_url: https://binti.com/current-openings/
+    scan_method: websearch
+    scan_query: 'site:binti.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Vrchat
+    careers_url: https://jobs.lever.co/vrchat
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Axuall
+    careers_url: https://job-boards.greenhouse.io/axuall
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Quora
+    careers_url: https://www.linkedin.com/company/quora/jobs/
+    scan_method: websearch
+    scan_query: 'site:linkedin.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Cambly
+    careers_url: https://jobs.ashbyhq.com/Cambly
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Aescape
+    careers_url: https://jobs.ashbyhq.com/aescape
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Nauticalcommerce
+    careers_url: https://www.nauticalcommerce.com/careers
+    scan_method: websearch
+    scan_query: 'site:nauticalcommerce.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Wanderu Breezy
+    careers_url: https://wanderu.breezy.hr/
+    scan_method: websearch
+    scan_query: 'site:wanderu.breezy.hr ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Edpuzzle
+    careers_url: https://jobs.lever.co/edpuzzle/
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Thrillworks
+    careers_url: https://www.linkedin.com/company/thrillworks/jobs/
+    scan_method: websearch
+    scan_query: 'site:linkedin.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Global Craft
+    careers_url: https://global.craft.co/careers/career-openings/
+    scan_method: websearch
+    scan_query: 'site:global.craft.co ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Reibus Applytojob
+    careers_url: https://reibus.applytojob.com/
+    scan_method: websearch
+    scan_query: 'site:reibus.applytojob.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Clockwork
+    careers_url: https://www.clockwork.com/careers/
+    scan_method: websearch
+    scan_query: 'site:clockwork.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Nodeslinks
+    careers_url: https://nodeslinks.com/careers/
+    scan_method: websearch
+    scan_query: 'site:nodeslinks.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Zuva
+    careers_url: https://zuva.ai/careers/
+    scan_method: websearch
+    scan_query: 'site:zuva.ai ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Rye
+    careers_url: https://www.linkedin.com/company/rye/jobs/
+    scan_method: websearch
+    scan_query: 'site:linkedin.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Pienso
+    careers_url: https://pienso.com/careers
+    scan_method: websearch
+    scan_query: 'site:pienso.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Naologic
+    careers_url: https://naologic.com/manufacturing/job-shop-production
+    scan_method: websearch
+    scan_query: 'site:naologic.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Withwisdom
+    careers_url: https://jobs.ashbyhq.com/withwisdom
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Equi
+    careers_url: https://jobs.ashbyhq.com/equi
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Fandomwikia
+    careers_url: https://www.linkedin.com/company/fandomwikia/jobs/
+    scan_method: websearch
+    scan_query: 'site:linkedin.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Percipient
+    careers_url: https://jobs.lever.co/percipient
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Perkspot12 Applytojob
+    careers_url: https://perkspot12.applytojob.com/
+    scan_method: websearch
+    scan_query: 'site:perkspot12.applytojob.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Jobs Nebula
+    careers_url: https://jobs.nebula.tv/
+    scan_method: websearch
+    scan_query: 'site:jobs.nebula.tv ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Intrepidstudios Applytojob
+    careers_url: https://intrepidstudios.applytojob.com/
+    scan_method: websearch
+    scan_query: 'site:intrepidstudios.applytojob.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Camsys
+    careers_url: https://camsys.com/careers-and-culture
+    scan_method: websearch
+    scan_query: 'site:camsys.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Sourcewell Wd1 Myworkdayjobs
+    careers_url: https://sourcewell.wd1.myworkdayjobs.com/SWCareers
+    scan_method: websearch
+    scan_query: 'site:sourcewell.wd1.myworkdayjobs.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Incubyte Incubyte Zohorecruit
+    careers_url: https://incubyte-incubyte.zohorecruit.in/jobs/Careers
+    scan_method: websearch
+    scan_query: 'site:incubyte-incubyte.zohorecruit.in ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Simplyhired
+    careers_url: https://www.simplyhired.com/search?q=golang&l=Remote&job=ASQeWlTtIqJdbm-Uj-cQ6n5Up0p8kiv_Z6uaYotE4PgbVyrcDi3fWQ&s=d&t=7
+    scan_method: websearch
+    scan_query: 'site:simplyhired.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Noon
+    careers_url: https://www.linkedin.com/company/nooncom/jobs
+    scan_method: websearch
+    scan_query: 'site:linkedin.com/company/nooncom ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Amazon
+    careers_url: https://www.amazon.jobs/content/en/locations/united-arab-emirates
+    scan_method: websearch
+    scan_query: 'site:amazon.jobs ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer") "United Arab Emirates" OR "UAE"'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Namshi
+    careers_url: https://careers.smartrecruiters.com/Namshi
+    scan_method: websearch
+    scan_query: 'site:careers.smartrecruiters.com/Namshi ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Theluxurycloset
+    careers_url: https://www.linkedin.com/company/the-luxury-closet/jobs
+    scan_method: websearch
+    scan_query: 'site:linkedin.com/company/the-luxury-closet ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Cobone
+    careers_url: https://www.cobone.com/en/static/jobs
+    scan_method: websearch
+    scan_query: 'site:cobone.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Careem
+    careers_url: https://jobs.careem.com
+    scan_method: websearch
+    scan_query: 'site:jobs.careem.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Swvl
+    careers_url: https://apply.workable.com/swvl/
+    scan_method: websearch
+    scan_query: 'site:apply.workable.com/swvl ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Fetchr
+    careers_url: https://apply.workable.com/fetchr/
+    scan_method: websearch
+    scan_query: 'site:apply.workable.com/fetchr ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Tenderd
+    careers_url: https://tenderd.com/careers
+    scan_method: websearch
+    scan_query: 'site:tenderd.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Talabat
+    careers_url: https://careers.deliveryhero.com/talabat-jobs
+    scan_method: websearch
+    scan_query: 'site:careers.deliveryhero.com/talabat-jobs ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Kitopi
+    careers_url: https://www.kitopi.com/careers
+    scan_method: websearch
+    scan_query: 'site:kitopi.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Craftydelivers
+    careers_url: https://craftydelivers.com/careers
+    scan_method: websearch
+    scan_query: 'site:craftydelivers.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Foodics
+    careers_url: https://foodics.com/careers
+    scan_method: websearch
+    scan_query: 'site:foodics.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Dubizzle
+    careers_url: https://www.dubizzlegroup.com/careers/
+    scan_method: websearch
+    scan_query: 'site:dubizzlegroup.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Propertyfinder
+    careers_url: https://www.propertyfinder.com/en/careers
+    scan_method: websearch
+    scan_query: 'site:propertyfinder.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Huspy
+    careers_url: https://job-boards.greenhouse.io/Huspy
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Getstake
+    careers_url: https://careers.getstake.com
+    scan_method: websearch
+    scan_query: 'site:careers.getstake.com OR site:getstake.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Beehive
+    careers_url: https://www.linkedin.com/company/beehive-ae/jobs
+    scan_method: websearch
+    scan_query: 'site:linkedin.com/company/beehive-ae ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Sarwa
+    careers_url: https://careers.sarwa.co
+    scan_method: websearch
+    scan_query: 'site:careers.sarwa.co OR site:sarwa.co ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Yallacompare
+    careers_url: https://yallacompare.com/careers
+    scan_method: websearch
+    scan_query: 'site:yallacompare.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Mamopay
+    careers_url: https://www.mamopay.com/careers/explore
+    scan_method: websearch
+    scan_query: 'site:mamopay.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Ziina
+    careers_url: https://ziina.com/careers
+    scan_method: websearch
+    scan_query: 'site:ziina.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Leantech
+    careers_url: https://www.leantech.me/uae/en/careers
+    scan_method: websearch
+    scan_query: 'site:leantech.me ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Pyypl
+    careers_url: https://pyypl.com/careers
+    scan_method: websearch
+    scan_query: 'site:pyypl.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Nowmoney
+    careers_url: https://nowmoney.me/careers
+    scan_method: websearch
+    scan_query: 'site:nowmoney.me ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Nymcard
+    careers_url: https://nymcard.com/careers
+    scan_method: websearch
+    scan_query: 'site:nymcard.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Mangopay
+    careers_url: https://mangopay.com/careers
+    scan_method: websearch
+    scan_query: 'site:mangopay.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Wio
+    careers_url: https://wio.io/careers
+    scan_method: websearch
+    scan_query: 'site:wio.io ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Yap
+    careers_url: https://yap.com/careers
+    scan_method: websearch
+    scan_query: 'site:yap.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Tabby
+    careers_url: https://tabby.ai/careers
+    scan_method: websearch
+    scan_query: 'site:tabby.ai ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Tamara
+    careers_url: https://tamara.co/careers
+    scan_method: websearch
+    scan_query: 'site:tamara.co ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Spotii
+    careers_url: https://spotii.me/careers
+    scan_method: websearch
+    scan_query: 'site:spotii.me ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Almosafer
+    careers_url: https://jobs.almosafer.com
+    scan_method: websearch
+    scan_query: 'site:jobs.almosafer.com OR site:almosafer.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Flyin
+    careers_url: https://www.linkedin.com/company/flyin-com
+    scan_method: websearch
+    scan_query: 'site:linkedin.com/company/flyin-com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: G42
+    careers_url: https://g42.ai/careers
+    scan_method: websearch
+    scan_query: 'site:g42.ai ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Presight
+    careers_url: https://presight.ai/careers
+    scan_method: websearch
+    scan_query: 'site:presight.ai ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Adnoc
+    careers_url: https://adnoc.ae/careers
+    scan_method: websearch
+    scan_query: 'site:adnoc.ae ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: 2gether
+    careers_url: https://2gether.global/careers
+    scan_method: websearch
+    scan_query: 'site:2gether.global ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Vezeeta
+    careers_url: https://apply.workable.com/vezeeta/
+    scan_method: websearch
+    scan_query: 'site:apply.workable.com/vezeeta ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Meddy
+    careers_url: https://www.linkedin.com/company/meddyhealthco/jobs
+    scan_method: websearch
+    scan_query: 'site:linkedin.com/company/meddyhealthco ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Alefeducation
+    careers_url: https://www.alefeducation.com/careers
+    scan_method: websearch
+    scan_query: 'site:alefeducation.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Classera
+    careers_url: https://www.linkedin.com/company/classera/jobs
+    scan_method: websearch
+    scan_query: 'site:linkedin.com/company/classera ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Bayt
+    careers_url: https://www.bayt.com/en/pages/about-us/careers/
+    scan_method: websearch
+    scan_query: 'site:bayt.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Anghami
+    careers_url: https://careers.anghami.com
+    scan_method: websearch
+    scan_query: 'site:careers.anghami.com OR site:anghami.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Pure Harvest Farms
+    careers_url: https://www.pureharvestfarms.com/our-people
+    scan_method: websearch
+    scan_query: 'site:pureharvestfarms.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Trukker
+    careers_url: https://trukker.com/ae/careers.html
+    scan_method: websearch
+    scan_query: 'site:trukker.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Aramex
+    careers_url: https://careers.aramex.com
+    scan_method: websearch
+    scan_query: 'site:careers.aramex.com OR site:aramex.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Emirates Post Group
+    careers_url: https://ehpv.fa.em2.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1/jobs
+    scan_method: websearch
+    scan_query: 'site:ehpv.fa.em2.oraclecloud.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
+    enabled: true
+
+  - name: Majid Al Futtaim
+    careers_url: https://www.majidalfuttaim.com/en/people-and-careers
+    scan_method: websearch
+    scan_query: 'site:majidalfuttaim.com ("Go" OR "Golang" OR "Backend Engineer" OR "Software Engineer" OR "Platform Engineer")'
+    notes: "Added from user-provided company-specific careers source."
     enabled: true
