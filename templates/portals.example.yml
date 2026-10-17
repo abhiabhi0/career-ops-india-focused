@@ -51,6 +51,12 @@ search_queries:
   - name: Platform and infrastructure — India Remote
     query: '("Platform Engineer" OR "Infrastructure Engineer" OR "Distributed Systems Engineer" OR "SRE") ("Go" OR "Golang") ("India remote" OR "Remote - India" OR "work from anywhere")'
     enabled: true
+  - name: Backend Engineer — Go gRPC Kafka India Remote
+    query: '("Backend Engineer" OR "Software Engineer" OR "Distributed Systems Engineer") ("Golang" OR "Go") ("gRPC" OR "Kafka" OR "microservices") ("Remote - India" OR "Remote, India" OR "India remote" OR "worldwide")'
+    enabled: true
+  - name: Developer infrastructure startups — Go India
+    query: '("Golang" OR "Go Engineer") ("developer tools" OR "cloud infrastructure" OR "observability" OR "database" OR "networking") ("India remote" OR "Remote - India" OR "work from anywhere")'
+    enabled: true
   - name: Wellfound — Go India Remote
     query: 'site:wellfound.com/jobs ("Golang" OR "Go Engineer" OR "Backend Engineer") ("India" OR "remote")'
     enabled: true
