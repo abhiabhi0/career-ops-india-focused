@@ -565,7 +565,7 @@ function extractLocationFromTitle(title = '') {
   //   "Go Developer @ Remote"
   //   "SDE II (Remote - India)"
   const locationKeywords = [
-    'remote', 'india', 'apac', 'global', 'worldwide', 'anywhere',
+    'india', 'bengaluru', 'bangalore', 'mumbai', 'delhi', 'hyderabad', 'pune', 'chennai', 'gurgaon', 'noida', 'worldwide', 'anywhere',
     'bangalore', 'bengaluru', 'mumbai', 'delhi', 'new delhi',
     'hyderabad', 'pune', 'chennai', 'gurgaon', 'noida',
     'ahmedabad', 'surat', 'vadodara', 'gujarat',
@@ -573,7 +573,7 @@ function extractLocationFromTitle(title = '') {
     'nagpur', 'jaipur', 'rajasthan',
     'kolkata', 'kochi', 'thiruvananthapuram',
     'europe', 'emea', 'spain', 'germany', 'france', 'uk',
-    'us', 'usa', 'united states', 'canada',
+    'united states', 'canada',
     'singapore', 'japan', 'australia',
   ];
 
