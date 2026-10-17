@@ -1,99 +1,88 @@
-# Career-Ops Profile Configuration
-# Copy this file to config/profile.yml and fill in your details.
-# This is the single source of truth for your personal data across all modes.
+# Career-Ops profile tailored for a Go backend engineer living in India.
+# Copy this file to config/profile.yml and fill in your personal details.
 
 candidate:
-  full_name: "Jane Smith"
-  email: "jane@example.com"
-  phone: "+1-555-0123"
-  location: "San Francisco, CA"
-  linkedin: "linkedin.com/in/janesmith"
-  portfolio_url: "https://janesmith.dev"
-  github: "github.com/janesmith"
-  twitter: "https://x.com/janesmith"
-  # (Optional) Canva resume design ID for visual CV generation via /career-ops pdf.
-  # Find it in your Canva design URL: https://www.canva.com/design/DAxxxxxxx/...
-  # The ID starts with "D" and is 11 characters long.
-  # canva_resume_design_id: "DAxxxxxxxxx"
+  full_name: ""
+  email: ""
+  phone: ""
+  location: "Bengaluru, India"
+  linkedin: ""
+  portfolio_url: ""
+  github: ""
 
 target_roles:
-  # Your North Star roles — what you're optimizing for
   primary:
-    - "Senior AI Engineer"
-    - "Staff ML Engineer"
-  # Archetypes help the evaluation system score fit
+    - "Golang Backend Engineer"
+    - "Go Backend Engineer"
+    - "Backend Software Engineer"
+    - "Platform Engineer"
+    - "Infrastructure Engineer"
+    - "Distributed Systems Engineer"
+    - "Site Reliability Engineer"
   archetypes:
-    - name: "AI/ML Engineer"
-      level: "Senior/Staff"
-      fit: "primary"        # primary = dream role, secondary = good fit, adjacent = stretch
-    - name: "AI Product Manager"
-      level: "Senior"
-      fit: "secondary"
-    - name: "Solutions Architect"
+    - name: "Go Backend Engineer"
       level: "Mid-Senior"
-      fit: "adjacent"
+      fit: "primary"
+    - name: "Platform / Infrastructure Engineer"
+      level: "Mid-Senior"
+      fit: "secondary"
 
 narrative:
-  # Your professional headline (1 line)
-  headline: "ML Engineer turned AI product builder"
-  # Your exit story — what makes you unique
-  exit_story: "Built and sold my SaaS after 5 years. Now focused on applied AI at scale."
-  # Your top 3-5 superpowers
+  headline: "Software Engineer specializing in Go backend systems"
+  exit_story: ""
   superpowers:
-    - "End-to-end ML pipelines"
-    - "Fast prototyping (idea to prod in 2 weeks)"
-    - "Cross-functional communication"
-  # Proof points — projects, articles, case studies with measurable impact
-  proof_points:
-    - name: "Project Alpha"
-      url: "https://janesmith.dev/project-alpha"
-      hero_metric: "Reduced inference latency 40%"
-    - name: "Open Source Tool"
-      url: "https://github.com/janesmith/tool"
-      hero_metric: "2K+ GitHub stars"
-  # Optional: dashboard/demo URL with credentials
-  # dashboard:
-  #   url: "https://janesmith.dev/demo"
-  #   password: "demo-2026"
+    - "Go backend services and microservices"
+    - "gRPC APIs and distributed systems"
+    - "Concurrency, reliability and performance testing"
+  proof_points: []
 
 compensation:
-  target_range: "$150K-200K"     # Your target total comp
-  currency: "USD"
-  minimum: "$120K"               # Walk-away number
-  location_flexibility: "Remote preferred, 1 week/month on-site possible"
+  target_range: ""
+  currency: "INR"
+  minimum: ""
+  location_flexibility: "Fully remote; must be eligible to work remotely from India"
 
 location:
-  country: "United States"
-  city: "San Francisco"
-  timezone: "PST"
-  visa_status: "No sponsorship needed"
-  # For remote roles outside your country:
-  # onsite_availability: "1 week/month in any city"
+  country: "India"
+  city: "Bengaluru"
+  timezone: "IST"
+  visa_status: "Resides in India; require roles that accept India-based applicants"
 
-# Job Scanner Criteria
-# These criteria are used by the search-scan and apply-assist scripts to filter job listings.
 job_criteria:
   allowed_titles:
-    - "ai engineer"
-    - "ml engineer"
-    - "machine learning"
-    - "backend"
+    - "golang"
+    - "go engineer"
+    - "go developer"
+    - "backend engineer"
+    - "backend developer"
     - "software engineer"
+    - "platform engineer"
+    - "infrastructure engineer"
+    - "distributed systems"
+    - "site reliability"
+    - "sre"
   required_skills:
-    - "python"
-    - "pytorch"
+    - "go"
+    - "golang"
+    - "grpc"
+    - "microservices"
+    - "kafka"
+    - "postgresql"
+    - "kubernetes"
   experience:
     min_years: 3
-    max_years: 8
+    max_years: 7
+  # Do not put "remote" alone here: it falsely treats every country's
+  # remote job as eligible. India/global eligibility is checked separately.
   allowed_locations:
-    - "remote"
-    - "san francisco"
-    - "united states"
-    - "us"
-    - "anywhere"
+    - "India"
+    - "Bengaluru"
+    - "Bangalore"
+    - "Worldwide"
+    - "Work from anywhere"
   blocked_phrases:
     - "frontend developer"
-    - "react designer"
+    - "react developer"
     - "salesforce developer"
     - "sap consultant"
-
+    - "mobile app developer"
