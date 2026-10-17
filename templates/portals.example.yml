@@ -10,81 +10,32 @@
 
 title_filter:
   positive:
-    # -- Golang specific --
     - "Golang"
     - "Go Developer"
     - "Go Engineer"
     - "Go Lang"
-    # -- Backend/software roles --
     - "Backend Engineer"
     - "Backend Developer"
     - "Software Engineer"
-    - "Software Developer"
-    - "API Engineer"
-    - "Server Engineer"
+    - "Platform Engineer"
+    - "Infrastructure Engineer"
+    - "Distributed Systems"
+    - "Site Reliability"
+    - "SRE"
   negative:
-    # -- Roles to skip --
     - "Junior"
     - "Intern"
     - "Trainee"
     - "Fresher"
-    - ".NET"
-    - "Java "
-    - "iOS"
-    - "Android"
-    - "PHP"
-    - "Ruby"
-    - "Embedded"
-    - "Firmware"
-    - "FPGA"
-    - "ASIC"
-    - "Blockchain"
-    - "Web3"
-    - "Crypto"
-    - "SAP "
-    - "Salesforce Admin"
-    - "COBOL"
-    - "Mainframe"
     - "Frontend"
     - "React Native"
     - "Flutter"
+    - "Salesforce"
+    - "SAP Consultant"
     - "Data Analyst"
     - "Business Analyst"
-    - "QA "
+    - "QA Engineer"
     - "Manual Test"
-    - "Full Stack"
-    - "Fullstack"
-    - "Platform Engineer"
-    - "Infrastructure Engineer"
-    - "Systems Engineer"
-    - "Site Reliability"
-    - "SRE"
-    - "DevOps"
-    - "Cloud Engineer"
-    - "Lead "
-    - "Staff "
-    - "Principal"
-    - "Manager"
-    - "Director"
-    - "Vice President"
-    - "VP "
-    - "Head of"
-    - "Architect"
-  seniority_boost:
-    - "Senior"
-    - "Staff"
-    - "Principal"
-    - "Lead"
-    - "Mid"
-
-# -- Search queries --
-# WebSearch queries for discovering roles. Queries can use placeholders
-# that are interpolated at runtime from config/profile.yml:
-#   {roles}          → OR-list of target_roles.primary
-#   {skills}         → OR-list of job_criteria.required_skills
-#   {locations}      → OR-list of job_criteria.allowed_locations
-#   {skills_or_roles} → union of roles + skills
-# Queries without placeholders are used as-is (backward compatible).
 
 search_queries:
   # India-first searches. Keep remote eligibility terms explicit; "remote" alone
