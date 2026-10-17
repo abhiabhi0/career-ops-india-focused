@@ -513,50 +513,50 @@ function classifyJobRelevance(job = {}) {
 
 // ── Location Filtering ────────────────────────────────────────────────
 
-// Default location filter positives/negatives — will be replaced at runtime by profile-derived values
+// India eligibility is intentionally conservative: "remote" alone does not
+// indicate that a company employs people living in India.
 let LOCATION_POSITIVES = [
   'india', 'bangalore', 'bengaluru', 'mumbai', 'delhi', 'hyderabad',
-  'pune', 'chennai', 'gurgaon', 'noida', 'apac', 'global', 'worldwide', 'anywhere'
+  'pune', 'chennai', 'gurgaon', 'gurugram', 'noida'
 ];
 
-const LOCATION_NEGATIVES = [
-  'us only', 'usa only', 'united states', 'uk only', 'united kingdom',
-  'europe only', 'emea', 'americas', 'canada', 'germany', 'france',
-  'london', 'new york', 'san francisco', 'north america', 'latam'
+const INDIA_SIGNALS = [
+  /\\bindia\\b/, /\\bindian\\b/, /\\bbengaluru\\b/, /\\bbangalore\\b/,
+  /\\bmumbai\\b/, /\\bdelhi\\b/, /\\bhyderabad\\b/, /\\bpune\\b/,
+  /\\bchennai\\b/, /\\bnoida\\b/, /\\bgurgaon\\b/, /\\bgurugram\\b/
+];
+
+const RESTRICTED_SIGNALS = [
+  /\\bus[- ]only\\b/, /\\busa[- ]only\\b/, /\\bunited states only\\b/,
+  /\\bmust be based in (the )?us\\b/, /\\bmust reside in (the )?us\\b/,
+  /\\buk[- ]only\\b/, /\\beurope[- ]only\\b/, /\\beu[- ]only\\b/,
+  /\\bemea[- ]only\\b/, /\\bcanada[- ]only\\b/, /\\bnorth america only\\b/
+];
+
+const WORLDWIDE_SIGNALS = [
+  /\\bworldwide\\b/, /\\bwork from anywhere\\b/, /\\bremote anywhere\\b/,
+  /\\bglobal remote\\b/, /\\banywhere in the world\\b/,
+  /\\ball countries\\b/, /\\bremote \\(global\\)\\b/
 ];
 
 function isLocationEligible(job, targetLoc = 'india') {
-  const title = String(job.title || '').toLowerCase();
-  const location = String(job.location || '').toLowerCase();
-  const description = String(job.description || '').toLowerCase();
-  const url = String(job.url || '').toLowerCase();
-  const text = [title, location, description, url].join(' ');
+  const text = [
+    job.title || '',
+    job.location || '',
+    job.url || '',
+    job.description || ''
+  ].join(' ').toLowerCase();
 
-  // Explicit India locations are eligible unless contradictory restrictions exist.
-  const indiaSignals = [
-    /\bindia\b/, /\bindian\b/, /\bbengaluru\b/, /\bbangalore\b/,
-    /\bmumbai\b/, /\bdelhi\b/, /\bhyderabad\b/, /\bpune\b/,
-    /\bchennai\b/, /\bnoida\b/, /\bgurgaon\b/, /\bgurugram\b/
-  ];
-  const restrictedSignals = [
-    /\bus[- ]only\b/, /\busa[- ]only\b/, /\bunited states only\b/,
-    /\bmust be based in (the )?us\b/, /\bmust reside in (the )?us\b/,
-    /\buk[- ]only\b/, /\beurope[- ]only\b/, /\beu[- ]only\b/,
-    /\bemea[- ]only\b/, /\bcanada[- ]only\b/, /\bnorth america only\b/
-  ];
-  if (restrictedSignals.some(pattern => pattern.test(text))) return false;
-  if (indiaSignals.some(pattern => pattern.test(text))) return true;
+  // A stated restriction takes precedence over generic remote wording.
+  if (RESTRICTED_SIGNALS.some(pattern => pattern.test(text))) return false;
 
-  // "Remote" or "APAC" alone doesn't establish that an India-based
-  // candidate is eligible. Accept only explicit broad-eligibility language.
-  const worldwideSignals = [
-    /\bworldwide\b/, /\bwork from anywhere\b/, /\bremote anywhere\b/,
-    /\bglobal remote\b/, /\banywhere in the world\b/,
-    /\ball countries\b/, /\bremote \(global\)\b/
-  ];
-  if (worldwideSignals.some(pattern => pattern.test(text))) return true;
+  // Explicit India location is eligible.
+  if (INDIA_SIGNALS.some(pattern => pattern.test(text))) return true;
 
-  // Keep ambiguous remote jobs out of the main India-eligible pipeline.
+  // Worldwide language is broad evidence, but APAC or remote alone is not.
+  if (WORLDWIDE_SIGNALS.some(pattern => pattern.test(text))) return true;
+
+  // Missing/ambiguous location is not proof of India eligibility.
   return false;
 }
 
