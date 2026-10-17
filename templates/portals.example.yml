@@ -17,11 +17,7 @@ title_filter:
     - "Backend Engineer"
     - "Backend Developer"
     - "Software Engineer"
-    - "Platform Engineer"
-    - "Infrastructure Engineer"
     - "Distributed Systems"
-    - "Site Reliability"
-    - "SRE"
   negative:
     - "Junior"
     - "Intern"
