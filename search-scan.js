@@ -521,22 +521,22 @@ let LOCATION_POSITIVES = [
 ];
 
 const INDIA_SIGNALS = [
-  /\\bindia\\b/, /\\bindian\\b/, /\\bbengaluru\\b/, /\\bbangalore\\b/,
-  /\\bmumbai\\b/, /\\bdelhi\\b/, /\\bhyderabad\\b/, /\\bpune\\b/,
-  /\\bchennai\\b/, /\\bnoida\\b/, /\\bgurgaon\\b/, /\\bgurugram\\b/
+  /\bindia\b/, /\bindian\b/, /\bbengaluru\b/, /\bbangalore\b/,
+  /\bmumbai\b/, /\bdelhi\b/, /\bhyderabad\b/, /\bpune\b/,
+  /\bchennai\b/, /\bnoida\b/, /\bgurgaon\b/, /\bgurugram\b/
 ];
 
 const RESTRICTED_SIGNALS = [
-  /\\bus[- ]only\\b/, /\\busa[- ]only\\b/, /\\bunited states only\\b/,
-  /\\bmust be based in (the )?us\\b/, /\\bmust reside in (the )?us\\b/,
-  /\\buk[- ]only\\b/, /\\beurope[- ]only\\b/, /\\beu[- ]only\\b/,
-  /\\bemea[- ]only\\b/, /\\bcanada[- ]only\\b/, /\\bnorth america only\\b/
+  /\bus[- ]only\b/, /\busa[- ]only\b/, /\bunited states only\b/,
+  /\bmust be based in (the )?us\b/, /\bmust reside in (the )?us\b/,
+  /\buk[- ]only\b/, /\beurope[- ]only\b/, /\beu[- ]only\b/,
+  /\bemea[- ]only\b/, /\bcanada[- ]only\b/, /\bnorth america only\b/
 ];
 
 const WORLDWIDE_SIGNALS = [
-  /\\bworldwide\\b/, /\\bwork from anywhere\\b/, /\\bremote anywhere\\b/,
-  /\\bglobal remote\\b/, /\\banywhere in the world\\b/,
-  /\\ball countries\\b/, /\\bremote \\(global\\)\\b/
+  /\bworldwide\b/, /\bwork from anywhere\b/, /\bremote anywhere\b/,
+  /\bglobal remote\b/, /\banywhere in the world\b/,
+  /\ball countries\b/, /\bremote \(global\)\b/
 ];
 
 function isLocationEligible(job, targetLoc = 'india') {
@@ -549,11 +549,7 @@ function isLocationEligible(job, targetLoc = 'india') {
 
   // A stated restriction takes precedence over generic remote wording.
   if (RESTRICTED_SIGNALS.some(pattern => pattern.test(text))) return false;
-
-  // Explicit India location is eligible.
   if (INDIA_SIGNALS.some(pattern => pattern.test(text))) return true;
-
-  // Worldwide language is broad evidence, but APAC or remote alone is not.
   if (WORLDWIDE_SIGNALS.some(pattern => pattern.test(text))) return true;
 
   // Missing/ambiguous location is not proof of India eligibility.
