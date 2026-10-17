@@ -2,7 +2,7 @@
 
 This repository is copied from [santifer/career-ops](https://github.com/santifer/career-ops) and modified to work with free-tier AI coding agents.
 
-Primary goal: Automate discovering, filtering, and applying to remote jobs worldwide, fully configurable for any role/location via `config/profile.yml`.
+Primary goal: Discover and prioritize remote jobs that explicitly accept applicants residing in India. The default example profile targets a Go backend engineer with 3–7 years of experience. Use `config/profile.yml` to personalize it.
 
 ## 🤖 Any AI Agent Supported
 This framework is built around standard markdown files (`pipeline.md`), which means it works perfectly with **any** AI coding agent, including:
