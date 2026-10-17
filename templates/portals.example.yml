@@ -87,259 +87,44 @@ title_filter:
 # Queries without placeholders are used as-is (backward compatible).
 
 search_queries:
-
-  # -- Golang specific --
-  - name: Ashby — Golang
-    query: 'site:jobs.ashbyhq.com ("Golang" OR "Go Developer" OR "Go Engineer") ("remote" OR "remote from India" OR "Remote - India" OR "APAC" OR "global remote" OR "work from anywhere")'
+  # India-first searches. Keep remote eligibility terms explicit; "remote" alone
+  # is too broad and returns US/EU-only jobs.
+  - name: Ashby — Go India Remote
+    query: 'site:jobs.ashbyhq.com ("Golang" OR "Go Engineer" OR "Go Developer") ("India" OR "Remote - India" OR "Remote, India" OR "work from anywhere" OR "worldwide")'
     enabled: true
-
-  - name: Greenhouse — Golang
-    query: '(site:boards.greenhouse.io OR site:job-boards.greenhouse.io) ("Golang" OR "Go Developer" OR "Go Engineer") ("remote" OR "remote from India" OR "Remote - India" OR "APAC" OR "global remote" OR "work from anywhere")'
+  - name: Greenhouse — Go India Remote
+    query: '(site:boards.greenhouse.io OR site:job-boards.greenhouse.io) ("Golang" OR "Go Engineer" OR "Go Developer") ("India" OR "Remote - India" OR "Remote, India" OR "work from anywhere" OR "worldwide")'
     enabled: true
-
-  - name: Lever — Golang
-    query: 'site:jobs.lever.co ("Golang" OR "Go Engineer" OR "Go Developer") ("remote" OR "remote from India" OR "Remote - India" OR "APAC" OR "global remote" OR "work from anywhere")'
+  - name: Lever — Go India Remote
+    query: 'site:jobs.lever.co ("Golang" OR "Go Engineer" OR "Go Developer") ("India" OR "Remote - India" OR "Remote, India" OR "work from anywhere" OR "worldwide")'
     enabled: true
-
-  # -- Backend Engineer --
-  - name: Ashby — Backend Engineer
-    query: 'site:jobs.ashbyhq.com ("Senior Backend Engineer" OR "Backend Developer" OR "Backend Engineer" OR "Software Engineer") ("Go" OR "Golang") ("remote" OR "remote from India" OR "Remote - India" OR "APAC" OR "global remote" OR "work from anywhere")'
+  - name: Startup jobs — Go India Remote
+    query: '("Golang" OR "Go Engineer" OR "Go Developer" OR "Backend Engineer") ("Remote - India" OR "Remote, India" OR "work from anywhere") (startup OR careers OR jobs)'
     enabled: true
-
-  - name: Greenhouse — Backend Engineer
-    query: 'site:job-boards.greenhouse.io ("Senior Backend Engineer" OR "Software Engineer Backend" OR "Backend Engineer" OR "Software Engineer") ("Go" OR "Golang") ("remote" OR "remote from India" OR "Remote - India" OR "APAC" OR "global remote" OR "work from anywhere")'
+  - name: Platform and infrastructure — India Remote
+    query: '("Platform Engineer" OR "Infrastructure Engineer" OR "Distributed Systems Engineer" OR "SRE") ("Go" OR "Golang") ("India remote" OR "Remote - India" OR "work from anywhere")'
     enabled: true
-
-  - name: Lever — Backend Engineer
-    query: 'site:jobs.lever.co ("Backend Engineer" OR "Software Engineer" OR "Software Developer") ("Go" OR "Golang") ("remote" OR "remote from India" OR "Remote - India" OR "APAC" OR "global remote" OR "work from anywhere")'
+  - name: Wellfound — Go India Remote
+    query: 'site:wellfound.com/jobs ("Golang" OR "Go Engineer" OR "Backend Engineer") ("India" OR "remote")'
     enabled: true
-
-  # -- Platform / Infra --
-  - name: Ashby — Platform Engineer
-    query: 'site:jobs.ashbyhq.com ("Platform Engineer" OR "Infrastructure Engineer" OR "Systems Engineer") ("Go" OR "Golang") ("remote" OR "remote from India" OR "Remote - India" OR "APAC" OR "global remote" OR "work from anywhere")'
+  - name: Y Combinator — Go India Remote
+    query: 'site:ycombinator.com/companies ("Golang" OR "Go Engineer" OR "Backend Engineer") ("India" OR "remote" OR "work from anywhere")'
     enabled: true
-
-  - name: Greenhouse — Platform Engineer
-    query: 'site:job-boards.greenhouse.io ("Platform Engineer" OR "Infrastructure Engineer" OR "Systems Engineer") ("Go" OR "Golang") ("remote" OR "remote from India" OR "Remote - India" OR "APAC" OR "global remote" OR "work from anywhere")'
+  - name: Remote OK — Go India
+    query: 'site:remoteok.com ("Golang" OR "Go Engineer" OR "Go Developer") ("India" OR "worldwide" OR "work from anywhere")'
     enabled: true
-
-  # -- SRE / DevOps --
-  - name: Ashby — SRE DevOps
-    query: 'site:jobs.ashbyhq.com ("SRE" OR "Site Reliability" OR "DevOps") ("Go" OR "Golang") ("remote" OR "remote from India" OR "Remote - India" OR "APAC" OR "global remote" OR "work from anywhere")'
+  - name: We Work Remotely — Go India
+    query: 'site:weworkremotely.com ("Golang" OR "Go Engineer" OR "Go Developer") ("India" OR "worldwide" OR "work from anywhere")'
     enabled: true
-
-  - name: Greenhouse — SRE DevOps
-    query: 'site:job-boards.greenhouse.io ("SRE" OR "Site Reliability" OR "DevOps") ("Go" OR "Golang") ("remote" OR "remote from India" OR "Remote - India" OR "APAC" OR "global remote" OR "work from anywhere")'
+  - name: LinkedIn — Go Remote India
+    query: 'site:linkedin.com/jobs/view ("Golang" OR "Go Engineer" OR "Go Developer") ("India" OR "Remote - India" OR "Bengaluru" OR "Bangalore")'
     enabled: true
-
-  # -- Wellfound (startups) --
-  - name: Wellfound — Go Backend
-    query: 'site:wellfound.com ("Golang" OR "Go Engineer" OR "Backend Engineer" OR "Go Developer") ("remote" OR "remote from India" OR "Remote - India" OR "APAC" OR "global remote" OR "work from anywhere")'
-    enabled: true
-
-  # -- Workable --
-  - name: Workable — Go Backend
-    query: 'site:apply.workable.com ("Golang" OR "Go") ("Backend" OR "Software Engineer" OR "Platform") ("remote" OR "remote from India" OR "Remote - India" OR "APAC" OR "global remote" OR "work from anywhere")'
-    enabled: true
-
-  # -- Remote job boards --
-  - name: RemoteOK — Golang
-    query: 'site:remoteok.com ("golang" OR "go developer" OR "go engineer") ("india" OR "remote")'
-    enabled: true
-
-  - name: WeWorkRemotely — Golang
-    query: 'site:weworkremotely.com ("golang" OR "go developer" OR "go engineer") ("India" OR "APAC" OR "remote")'
-    enabled: true
-
-  - name: Jobspresso — Go Backend
-    query: 'site:jobspresso.co ("golang" OR "go developer" OR "backend engineer" OR "software engineer") ("remote" OR "India" OR "APAC")'
-    enabled: true
-
-  - name: Dynamite Jobs — Go Backend
-    query: 'site:dynamitejobs.com ("golang" OR "go developer" OR "backend engineer" OR "software engineer") ("remote" OR "India" OR "APAC")'
-    enabled: true
-
-  - name: Virtual Vocations — Go Backend
-    query: 'site:virtualvocations.com ("golang" OR "go developer" OR "backend engineer" OR "software engineer") ("remote" OR "India" OR "APAC")'
-    enabled: true
-
-  - name: InterviewStack Job Board — Backend Remote India
-    query: 'site:interviewstack.io/job-board ("golang" OR "go developer" OR "backend developer" OR "software engineer") ("remote" OR "India")'
-    enabled: true
-
-  - name: SkipTheDrive — Go Backend
-    query: 'site:skipthedrive.com ("golang" OR "go developer" OR "backend engineer" OR "software engineer") ("remote" OR "India" OR "APAC")'
-    enabled: true
-
-  - name: Foorilla Hiring — Go Backend
-    query: 'site:foorilla.com/hiring ("golang" OR "go developer" OR "backend engineer" OR "software engineer") ("remote" OR "India")'
-    enabled: true
-
-  - name: Jobgether — Go Backend
-    query: 'site:jobgether.com ("golang" OR "go developer" OR "backend engineer" OR "software engineer") ("remote" OR "India" OR "APAC")'
-    enabled: true
-
-  - name: Hiring Cafe — Go Backend
-    query: 'site:hiring.cafe ("golang" OR "go developer" OR "backend engineer" OR "software engineer") ("remote" OR "India")'
-    enabled: true
-
-  - name: Remote100K — Go Backend
-    query: 'site:remote100k.com ("golang" OR "go developer" OR "backend engineer" OR "software engineer") ("remote" OR "India" OR "APAC")'
-    enabled: true
-
-  - name: Himalayas — Go Backend
-    query: 'site:himalayas.app/jobs ("golang" OR "go developer" OR "backend engineer" OR "software engineer") ("remote" OR "India" OR "APAC")'
-    enabled: true
-
-  - name: Built In Remote — Go Python Backend India
-    query: 'site:builtin.com/jobs/remote/dev-engineering/golang/python ("golang" OR "python" OR "backend engineer" OR "software engineer") ("India" OR "remote")'
-    enabled: true
-
-  - name: Working Nomads — Development India
-    query: 'site:workingnomads.com/jobs ("golang" OR "go developer" OR "backend engineer" OR "software engineer") ("India" OR "anywhere" OR "remote")'
-    enabled: true
-
-  - name: Hirist — Backend Development India
-    query: 'site:hirist.tech/c/backend-development-jobs ("golang" OR "go developer" OR "backend engineer" OR "software engineer") ("India" OR "remote")'
-    enabled: true
-
-  - name: Astra Hiring — Go Backend
-    query: 'site:useastra.in/hiring ("golang" OR "go developer" OR "backend engineer" OR "software engineer") ("remote" OR "India")'
-    enabled: true
-
-    # -- Location: Madhya Pradesh (Indore, Bhopal) --
-  - name: Naukri — Go Backend MP
-    query: 'site:naukri.com ("Golang" OR "Go Developer" OR "Go Engineer" OR "Backend Engineer") ("Indore" OR "Bhopal" OR "Madhya Pradesh")'
-    enabled: true
-
-  - name: LinkedIn — Go Backend MP
-    query: 'site:linkedin.com/jobs ("Golang" OR "Go Engineer" OR "Backend Engineer") ("Indore" OR "Bhopal" OR "Madhya Pradesh")'
-    enabled: true
-
-  # -- Location: Gujarat (Ahmedabad, Surat, Vadodara) --
-  - name: Naukri — Go Backend Gujarat
-    query: 'site:naukri.com ("Golang" OR "Go Developer" OR "Backend Engineer" OR "Software Engineer") ("Ahmedabad" OR "Surat" OR "Vadodara" OR "Gujarat")'
-    enabled: true
-
-  - name: LinkedIn — Go Backend Gujarat
-    query: 'site:linkedin.com/jobs ("Golang" OR "Go Engineer" OR "Backend Engineer") ("Ahmedabad" OR "Surat" OR "Vadodara" OR "Gujarat")'
-    enabled: true
-
-  # -- General India Remote (Top Portals) --
-  - name: Instahyre — Go Backend India
-    query: 'site:instahyre.com/jobs ("Golang" OR "Go Developer") ("Remote" OR "India" OR "Bengaluru" OR "Bangalore" OR "Pune")'
-    enabled: true
-
-  - name: Instahyre — Golang India
-    query: 'site:instahyre.com/golang-jobs-in-anywhere-in-india ("Golang" OR "Go Developer" OR "Backend Engineer") ("India" OR "remote")'
-    enabled: true
-
   - name: Naukri — Go Backend India
-    query: 'site:naukri.com/job-listings ("Golang" OR "Go Developer" OR "Go Engineer") ("Remote" OR "India" OR "Bengaluru" OR "Bangalore" OR "Pune" OR "Mumbai" OR "Hyderabad" OR "Delhi" OR "Chennai")'
+    query: 'site:naukri.com ("Golang" OR "Go Developer" OR "Go Engineer" OR "Backend Engineer") ("remote" OR "India" OR "Bengaluru" OR "Bangalore")'
     enabled: true
-
-  - name: Cutshort — Go Backend India
-    query: 'site:cutshort.io/jobs ("Golang" OR "Go Developer") ("Remote" OR "India")'
-    enabled: true
-
-  - name: LinkedIn — Go Backend India (Remote)
-    query: 'site:linkedin.com/jobs/view ("Golang" OR "Go Engineer" OR "Go Developer") ("India" OR "Bengaluru" OR "Bangalore" OR "Pune" OR "Mumbai") ("remote")'
-    enabled: true
-
-  - name: Wellfound — Go Backend Gujarat
-    query: 'site:wellfound.com ("Golang" OR "Go Engineer" OR "Backend Engineer") ("Ahmedabad" OR "Gujarat")'
-    enabled: true
-
-  # -- Location: Nagpur --
-  - name: Naukri — Go Backend Nagpur
-    query: 'site:naukri.com ("Golang" OR "Go Developer" OR "Backend Engineer" OR "Software Engineer") ("Nagpur")'
-    enabled: true
-
-  - name: LinkedIn — Go Backend Nagpur
-    query: 'site:linkedin.com/jobs ("Golang" OR "Go Engineer" OR "Backend Engineer") ("Nagpur")'
-    enabled: true
-
-  # -- Location: Jaipur --
-  - name: Naukri — Go Backend Jaipur
-    query: 'site:naukri.com ("Golang" OR "Go Developer" OR "Backend Engineer" OR "Software Engineer") ("Jaipur" OR "Rajasthan")'
-    enabled: true
-
-  - name: LinkedIn — Go Backend Jaipur
-    query: 'site:linkedin.com/jobs ("Golang" OR "Go Engineer" OR "Backend Engineer") ("Jaipur" OR "Rajasthan")'
-    enabled: true
-
-  - name: Wellfound — Go Backend Jaipur
-    query: 'site:wellfound.com ("Golang" OR "Backend Engineer") ("Jaipur")'
-    enabled: true
-
-  # -- Indian job boards: broad Go backend sweep --
-  - name: Cutshort — Go Backend India
-    query: 'site:cutshort.io ("Golang" OR "Go Engineer" OR "Backend Engineer") ("Ahmedabad" OR "Jaipur" OR "Indore" OR "Nagpur" OR "remote")'
-    enabled: true
-
   - name: Instahyre — Go Backend India
-    query: 'site:instahyre.com ("Golang" OR "Go Engineer" OR "Backend Engineer") ("Ahmedabad" OR "Jaipur" OR "Indore" OR "Nagpur" OR "remote")'
+    query: 'site:instahyre.com/jobs ("Golang" OR "Go Developer" OR "Backend Engineer") ("remote" OR "India" OR "Bengaluru" OR "Pune")'
     enabled: true
-
-  - name: Foundit — Go Backend India
-    query: 'site:foundit.in ("Golang" OR "Go Developer" OR "Backend Engineer") ("Ahmedabad" OR "Jaipur" OR "Indore" OR "Nagpur")'
-    enabled: true
-
-    # -- Y Combinator / WorkAtAStartup --
-  - name: WorkAtAStartup — Go Backend
-    query: 'site:workatastartup.com ("Golang" OR "Go Engineer" OR "Go Developer" OR "Backend Engineer") ("remote" OR "India" OR "APAC" OR "global")'
-    enabled: true
-
-  - name: YCombinator Jobs — Go Backend
-    query: 'site:ycombinator.com/companies ("Golang" OR "Go Engineer" OR "Backend Engineer") ("remote" OR "India")'
-    enabled: true
-
-  # -- Remote-specialist boards --
-  - name: RemoteRocketship — Go Backend India
-    query: 'site:remoterocketship.com ("Golang" OR "Go" OR "Backend Engineer") ("India" OR "remote")'
-    enabled: true
-
-  - name: Arc.dev — Go Backend Remote India
-    query: 'site:arc.dev ("Golang" OR "Go Developer" OR "Backend Engineer") ("India" OR "remote" OR "APAC")'
-    enabled: true
-
-  - name: Turing — Go Backend Remote India
-    query: 'site:turing.com ("Golang" OR "Go Engineer" OR "Backend Engineer") ("India" OR "remote")'
-    enabled: true
-
-  - name: Contra — Go Backend Remote
-    query: 'site:contra.com ("Golang" OR "Go Engineer" OR "Backend Engineer") ("remote" OR "India")'
-    enabled: true
-
-  - name: Crossover — Backend Engineer India
-    query: 'site:crossover.com ("Go" OR "Backend Engineer" OR "Software Engineer") ("India" OR "remote")'
-    enabled: true
-
-  - name: TrueWorkFromHome — Go Backend Remote
-    query: 'site:trueworkfromhome.com ("Golang" OR "Go" OR "Backend Engineer" OR "Software Engineer") ("India" OR "remote")'
-    enabled: true
-
-  # -- Indian job boards (additional) --
-  - name: Indeed India — Go Backend
-    query: 'site:indeed.com ("Golang" OR "Go Developer" OR "Go Engineer" OR "Backend Engineer") ("remote" OR "India" OR "Bangalore" OR "Bengaluru")'
-    enabled: true
-
-  - name: Shine — Go Backend India
-    query: 'site:shine.com ("Golang" OR "Go Engineer" OR "Backend") ("remote" OR "Bangalore" OR "Indore" OR "Jaipur" OR "Ahmedabad" OR "Nagpur")'
-    enabled: true
-
-  # -- Startup ecosystem boards --
-  - name: AngelList/Wellfound — Go Backend India (startups)
-    query: 'site:wellfound.com/role/r/software-engineer ("Golang" OR "Go" OR "Backend") ("India" OR "remote")'
-    enabled: true
-
-  - name: Freshteam — Go Backend India
-    query: 'site:freshteam.com/jobs ("Golang" OR "Go Developer" OR "Backend Engineer") ("India" OR "remote")'
-    enabled: true
-
-# -- Tracked companies --
-# Companies known to hire remote Go engineers.
-# careers_url = direct link to their job board page.
 
 tracked_companies:
 
