@@ -526,19 +526,38 @@ const LOCATION_NEGATIVES = [
 ];
 
 function isLocationEligible(job, targetLoc = 'india') {
-  const text = `${job.title} ${job.location} ${job.url} ${job.description || ''}`.toLowerCase();
+  const title = String(job.title || '').toLowerCase();
+  const location = String(job.location || '').toLowerCase();
+  const description = String(job.description || '').toLowerCase();
+  const url = String(job.url || '').toLowerCase();
+  const text = [title, location, description, url].join(' ');
 
-  const hasPositive = LOCATION_POSITIVES.some(p => text.includes(p));
-  if (hasPositive) return true;
+  // Explicit India locations are eligible unless contradictory restrictions exist.
+  const indiaSignals = [
+    /\bindia\b/, /\bindian\b/, /\bbengaluru\b/, /\bbangalore\b/,
+    /\bmumbai\b/, /\bdelhi\b/, /\bhyderabad\b/, /\bpune\b/,
+    /\bchennai\b/, /\bnoida\b/, /\bgurgaon\b/, /\bgurugram\b/
+  ];
+  const restrictedSignals = [
+    /\bus[- ]only\b/, /\busa[- ]only\b/, /\bunited states only\b/,
+    /\bmust be based in (the )?us\b/, /\bmust reside in (the )?us\b/,
+    /\buk[- ]only\b/, /\beurope[- ]only\b/, /\beu[- ]only\b/,
+    /\bemea[- ]only\b/, /\bcanada[- ]only\b/, /\bnorth america only\b/
+  ];
+  if (restrictedSignals.some(pattern => pattern.test(text))) return false;
+  if (indiaSignals.some(pattern => pattern.test(text))) return true;
 
-  const hasNegative = LOCATION_NEGATIVES.some(n => text.includes(n));
-  if (hasNegative) return false;
+  // "Remote" or "APAC" alone doesn't establish that an India-based
+  // candidate is eligible. Accept only explicit broad-eligibility language.
+  const worldwideSignals = [
+    /\bworldwide\b/, /\bwork from anywhere\b/, /\bremote anywhere\b/,
+    /\bglobal remote\b/, /\banywhere in the world\b/,
+    /\ball countries\b/, /\bremote \(global\)\b/
+  ];
+  if (worldwideSignals.some(pattern => pattern.test(text))) return true;
 
-  if (text.includes('remote') || text.includes('wfh')) return true;
-
-  if (targetLoc && !text.includes(targetLoc.toLowerCase())) return false;
-
-  return true;
+  // Keep ambiguous remote jobs out of the main India-eligible pipeline.
+  return false;
 }
 
 // ── Location extraction from titles ───────────────────────────────────
